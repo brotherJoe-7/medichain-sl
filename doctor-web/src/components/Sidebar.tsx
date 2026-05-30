@@ -5,7 +5,12 @@ import {
   Calendar, 
   FileText, 
   Settings, 
-  ShieldCheck 
+  ShieldCheck,
+  BarChart2,
+  QrCode,
+  History,
+  Bell,
+  UserCircle
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -15,6 +20,11 @@ const Sidebar: React.FC = () => {
     { id: 'patients', label: 'My Patients', icon: Users, path: '/patients' },
     { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
     { id: 'records', label: 'Medical Records', icon: FileText, path: '/records' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2, path: '/analytics' },
+    { id: 'scan-qr', label: 'Scan QR Code', icon: QrCode, path: '/scan-qr' },
+    { id: 'access-log', label: 'Access Log', icon: History, path: '/access-log' },
+    { id: 'notifications', label: 'Notifications', icon: Bell, path: '/notifications' },
+    { id: 'profile', label: 'Doctor Profile', icon: UserCircle, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];
 
@@ -24,7 +34,7 @@ const Sidebar: React.FC = () => {
         <div className="logo-icon">
           <ShieldCheck size={24} />
         </div>
-        <span className="logo-text">MediChain Portal</span>
+        <span className="logo-text">PalmChain Portal</span>
       </div>
 
       <nav className="nav-menu">

@@ -1,11 +1,11 @@
 :root {
   /* Color Palette */
-  --primary: #4F46E5;
-  --primary-hover: #4338CA;
-  --primary-light: #EEF2FF;
+  --primary: #10B981; /* Emerald Green */
+  --primary-hover: #059669;
+  --primary-light: #D1FAE5;
   
-  --secondary: #10B981;
-  --secondary-hover: #059669;
+  --secondary: #4F46E5; /* Indigo */
+  --secondary-hover: #4338CA;
   
   --accent: #F59E0B;
   
