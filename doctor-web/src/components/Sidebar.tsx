@@ -34,7 +34,7 @@ const Sidebar: React.FC = () => {
         <div className="logo-icon">
           <ShieldCheck size={24} />
         </div>
-        <span className="logo-text">PalmChain Portal</span>
+        <span className="logo-text">MediChain Portal</span>
       </div>
 
       <nav className="nav-menu">

@@ -1,4 +1,4 @@
-// ─── PalmChain Doctor Portal — Type Definitions ─────────────────────────────
+// ─── MediChain Doctor Portal — Type Definitions ─────────────────────────────
 
 export interface Doctor {
   id: string;
