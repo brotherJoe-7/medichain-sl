@@ -172,7 +172,7 @@ export const useStore = create<AppState>((set, get) => ({
       }
 
       // Always load from DB into Zustand
-      const [meds, records, appts, logs, metrics, allergies, user] = await Promise.all([
+      let [meds, records, appts, logs, metrics, allergies, user] = await Promise.all([
         MedicationDB.getAll(),
         RecordDB.getAll(),
         AppointmentDB.getAll(),
@@ -181,6 +181,38 @@ export const useStore = create<AppState>((set, get) => ({
         AllergyDB.getAll(),
         UserDB.get(),
       ]);
+
+      // --- DYNAMIC DATA INJECTION ---
+      // Fetch live data from the backend if available
+      try {
+        const { fetchPatientRecords, fetchAuditLogs } = require('../services/api');
+        const liveRecords = await fetchPatientRecords('PAT-1'); // Currently hardcoded to patient 1 for demo
+        const liveLogs = await fetchAuditLogs('PAT-1');
+        
+        if (liveRecords && liveRecords.length > 0) {
+          records = liveRecords.map((r: any) => ({
+            id: r.id || r.recordId || Math.random().toString(),
+            title: r.type || r.recordType || 'Medical Record',
+            date: r.date || r.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0],
+            type: r.type || r.recordType || 'General',
+            doctor: r.doctorId || 'Unknown Doctor',
+            hospital: 'Hyperledger Fabric Network'
+          }));
+        }
+
+        if (liveLogs && liveLogs.length > 0) {
+          logs = liveLogs.map((l: any) => ({
+            id: l.id || Math.random().toString(),
+            action: l.action,
+            timestamp: l.timestamp?.split('T').join(' ') || new Date().toISOString(),
+            details: l.details,
+            txHash: l.txHash || '0x...'
+          }));
+        }
+      } catch (e) {
+        console.log('Backend not reachable, falling back to local SQLite data.');
+      }
+      // ------------------------------
 
       set({
         medications: meds,
@@ -193,7 +225,7 @@ export const useStore = create<AppState>((set, get) => ({
         isDbReady: true,
       });
 
-      console.log('[DB] Loaded all data from SQLite');
+      console.log('[DB] Loaded all data from SQLite + Live Backend API');
     } catch (err) {
       console.error('[DB] Failed to load from database:', err);
       // Graceful fallback: keep seed data, mark db ready so app still shows

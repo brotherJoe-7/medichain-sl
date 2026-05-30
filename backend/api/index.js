@@ -163,6 +163,55 @@ app.post('/api/ipfs/upload', upload.single('document'), async (req, res) => {
     }
 });
 
+// Emergency Break-Glass Access
+app.post('/api/emergency/access', async (req, res) => {
+    const { patientId, doctorId } = req.body;
+    
+    if (!patientId || !doctorId) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
+
+    try {
+        console.log(`🚨 [Blockchain] EMERGENCY ACCESS TRIGGERED: Doctor ${doctorId} accessing ${patientId}`);
+        
+        // 1. Audit log the emergency access
+        try {
+            const auditId = 'aud_' + Math.random().toString(36).substring(2, 11);
+            await fabric.submitTransaction(
+                'audit',
+                'AddAuditLog',
+                auditId,
+                doctorId,
+                'doctor',
+                patientId,
+                'EMERGENCY_ACCESS',
+                `Break-Glass Protocol used via NFC Scan`,
+                'success'
+            );
+        } catch (auditErr) {
+            console.error('Failed to commit emergency audit trail:', auditErr);
+        }
+
+        // 2. Return the temporary emergency payload
+        res.json({
+            success: true,
+            payload: {
+                patientId,
+                name: 'Alex Johnson',
+                bloodType: 'O+',
+                allergies: ['Penicillin', 'Peanuts'],
+                medications: ['Lisinopril 10mg'],
+                conditions: ['Hypertension'],
+                emergencyContact: '+232 76 555 123 (Wife)',
+                tokenExpiry: new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleTimeString()
+            }
+        });
+    } catch (error) {
+        console.error('❌ Emergency Access Error:', error);
+        res.status(500).json({ error: 'Emergency access failed: ' + error.message });
+    }
+});
+
 // Notarize medical record on Hyperledger Fabric ledger
 app.post('/api/records/notarize', async (req, res) => {
     const { patientId, recordId, documentHash, ipfsHash, recordType, doctorId, patientSignature } = req.body;

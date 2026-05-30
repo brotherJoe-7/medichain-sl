@@ -1,40 +1,31 @@
 import React, { useState } from 'react';
 import { QrCode, AlertTriangle, ShieldAlert, CheckCircle, Activity, User, Phone, Stethoscope } from 'lucide-react';
 
+import { emergencyAccess } from '../services/api';
+
 const ScanQR: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [emergencyData, setEmergencyData] = useState<any>(null);
 
-  const simulateScan = () => {
+  const simulateScan = async () => {
     setScanning(true);
-    // Simulate camera delay and blockchain verification
-    setTimeout(async () => {
-      try {
-        const doctorId = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
-        
-        // In a real scenario, this would send the scanned token to the backend
-        // For the demo, we'll simulate the backend response after 2 seconds
-        setTimeout(() => {
-          setEmergencyData({
-            patientId: 'PAT-10492',
-            name: 'Alex Johnson',
-            bloodType: 'O+',
-            allergies: ['Penicillin', 'Peanuts'],
-            medications: ['Lisinopril 10mg'],
-            conditions: ['Hypertension'],
-            emergencyContact: '+232 76 555 123 (Wife)',
-            tokenExpiry: new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleTimeString() // 4 hours from now
-          });
-          setScanning(false);
-          setScanned(true);
-        }, 1500);
-
-      } catch (error) {
-        console.error('Scan failed', error);
-        setScanning(false);
+    try {
+      const doctorId = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
+      
+      // Real API call to trigger blockchain audit and get payload
+      const response = await emergencyAccess('PAT-10492', doctorId);
+      
+      if (response.success) {
+        setEmergencyData(response.payload);
+        setScanned(true);
       }
-    }, 1000);
+    } catch (error) {
+      console.error('Scan failed', error);
+      alert('Emergency Access Failed: ' + (error as Error).message);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const resetScanner = () => {

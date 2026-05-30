@@ -51,11 +51,11 @@ function TabNavigator() {
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Spacing.md,
+          bottom: 25, // Increased bottom margin to prevent collision with OS nav bar/home indicator
           left: Spacing.lg,
           right: Spacing.lg,
-          height: 70,
-          paddingBottom: 12,
+          height: 65,
+          paddingBottom: 8,
           paddingTop: 8,
           borderRadius: Radius.xl,
           backgroundColor: 'white',

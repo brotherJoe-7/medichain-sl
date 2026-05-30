@@ -87,6 +87,12 @@ export const revokeAccess = (patientId: string, doctorId: string) =>
     body: JSON.stringify({ patientId, doctorId }),
   });
 
+export const emergencyAccess = (patientId: string, doctorId: string) =>
+  request<{ success: boolean; payload: any }>('/emergency/access', {
+    method: 'POST',
+    body: JSON.stringify({ patientId, doctorId }),
+  });
+
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 export const getAuditLog = (actorId: string) =>
   request<any[]>(`/audit/log?actorId=${encodeURIComponent(actorId)}`);
