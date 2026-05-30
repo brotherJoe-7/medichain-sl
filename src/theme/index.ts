@@ -9,11 +9,11 @@
  */
 
 export const Colors = {
-  // Primary — Core brand color
-  primary:       '#1F38F1',
-  primaryDark:   '#1228C8',
-  primaryLight:  '#E6EAFD',
-  primaryMid:    '#B5C4FB',
+  // Primary — Core brand color (MediChain Flat Blue)
+  primary:       '#3B82F6',
+  primaryDark:   '#2563EB',
+  primaryLight:  '#DBEAFE',
+  primaryMid:    '#93C5FD',
 
   // Accent — Lime green for CTAs (use sparingly on dark backgrounds only)
   accent:        '#BFFF00',
