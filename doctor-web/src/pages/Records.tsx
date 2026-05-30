@@ -20,6 +20,13 @@ const Records: React.FC = () => {
 
   const doctorId = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
 
+  // Listen for "New Record" button in the top header
+  useEffect(() => {
+    const handler = () => { setShowForm(true); setFormError(''); };
+    window.addEventListener('mc:new-record', handler);
+    return () => window.removeEventListener('mc:new-record', handler);
+  }, []);
+
   useEffect(() => {
     getPatients(doctorId).then(data => setPatients(data.map(p => ({ id: p.id, name: p.name })))).catch(() => {});
   }, []);
