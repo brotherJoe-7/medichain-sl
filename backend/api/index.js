@@ -298,6 +298,101 @@ app.post('/api/access/revoke', async (req, res) => {
     }
 });
 
+// ── Patient CRUD ─────────────────────────────────────────────────────────────
+
+// Register a new patient on the blockchain
+app.post('/api/patients', async (req, res) => {
+    const { id, name, age, gender, dob, phone, email, address, bloodType, condition, allergies, medications, notes, doctorId } = req.body;
+    if (!id || !name) return res.status(400).json({ error: 'Patient id and name are required' });
+
+    try {
+        console.log(`📡 [Blockchain] Registering patient: ${id}`);
+        const result = await fabric.submitTransaction(
+            'patient',
+            'CreatePatient',
+            id,
+            JSON.stringify({ name, age, gender, dob, phone, email, address, bloodType, condition, allergies: allergies || [], medications: medications || [], notes: notes || '', status: 'Active', lastVisit: new Date().toISOString().split('T')[0] }),
+            doctorId || 'self'
+        );
+
+        // Audit log
+        try {
+            const auditId = 'aud_' + Math.random().toString(36).substring(2, 11);
+            await fabric.submitTransaction('audit', 'AddAuditLog', auditId, doctorId || 'self', 'doctor', id, 'CREATE_PATIENT', `Registered patient ${name}`, 'success');
+        } catch (e) { /* non-fatal */ }
+
+        res.status(201).json({ success: true, patientId: id, txHash: result.txHash });
+    } catch (error) {
+        console.error('❌ Create Patient Error:', error);
+        res.status(500).json({ error: 'Failed to register patient: ' + error.message });
+    }
+});
+
+// Get all patients for a doctor
+app.get('/api/patients', async (req, res) => {
+    const doctorId = req.query.doctorId || 'doctor_smith';
+    try {
+        console.log(`📡 [Blockchain] Querying patients for doctor: ${doctorId}`);
+        const result = await fabric.evaluateTransaction('patient', 'GetPatientsByDoctor', doctorId);
+        const patients = JSON.parse(result.toString() || '[]');
+        res.json(patients);
+    } catch (error) {
+        console.warn('⚠️ GetPatientsByDoctor not supported, returning empty:', error.message);
+        res.json([]);
+    }
+});
+
+// Get single patient
+app.get('/api/patients/:id', async (req, res) => {
+    try {
+        const result = await fabric.evaluateTransaction('patient', 'GetPatient', req.params.id);
+        res.json(JSON.parse(result.toString()));
+    } catch (error) {
+        res.status(404).json({ error: 'Patient not found: ' + error.message });
+    }
+});
+
+// ── Records ───────────────────────────────────────────────────────────────────
+
+// Get all records for a patient
+app.get('/api/records', async (req, res) => {
+    const patientId = req.query.patientId;
+    if (!patientId) return res.status(400).json({ error: 'patientId query param required' });
+    try {
+        console.log(`📡 [Blockchain] Querying records for patient: ${patientId}`);
+        const result = await fabric.evaluateTransaction('patient', 'GetPatientDocuments', patientId);
+        const records = JSON.parse(result.toString() || '[]');
+        res.json(records);
+    } catch (error) {
+        console.warn('⚠️ GetPatientDocuments error:', error.message);
+        res.json([]);
+    }
+});
+
+// ── Dashboard Stats ───────────────────────────────────────────────────────────
+app.get('/api/dashboard/stats', async (req, res) => {
+    try {
+        const healthRes = await fabric.evaluateTransaction('audit', 'GetAuditStats');
+        const stats = JSON.parse(healthRes.toString() || '{}');
+        res.json(stats);
+    } catch {
+        // Fallback: return zeros if chaincode doesn't expose stats yet
+        res.json({ totalPatients: 0, todayAppointments: 0, pendingRecords: 0, syncRate: 100 });
+    }
+});
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+app.get('/api/audit/log', async (req, res) => {
+    const actorId = req.query.actorId || '';
+    try {
+        console.log(`📡 [Blockchain] Querying audit log for: ${actorId}`);
+        const result = await fabric.evaluateTransaction('audit', 'GetAuditTrailByActor', actorId);
+        res.json(JSON.parse(result.toString() || '[]'));
+    } catch (error) {
+        res.json([]);
+    }
+});
+
 // Graceful gateway shutdown
 process.on('SIGINT', async () => {
     console.log('Gracefully disconnecting from Fabric gateway...');

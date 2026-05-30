@@ -1,152 +1,142 @@
-import React from 'react';
-import { Users, Calendar, FileText, Activity, TrendingUp, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Users, Calendar, FileText, Activity, TrendingUp, RefreshCw } from 'lucide-react';
+import { getDashboardStats, getAuditLog, checkHealth } from '../services/api';
+
+interface Stats {
+  totalPatients: number;
+  todayAppointments: number;
+  pendingRecords: number;
+  syncRate: number;
+}
+
+interface AuditEntry {
+  id: string;
+  actor: string;
+  action: string;
+  details: string;
+  timestamp: string;
+}
 
 const Dashboard: React.FC = () => {
+  const [stats, setStats] = useState<Stats>({ totalPatients: 0, todayAppointments: 0, pendingRecords: 0, syncRate: 0 });
+  const [activity, setActivity] = useState<AuditEntry[]>([]);
+  const [blockchainStatus, setBlockchainStatus] = useState<'checking' | 'live' | 'error'>('checking');
+  const [loading, setLoading] = useState(true);
+
+  const doctorId = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [health, s, log] = await Promise.all([
+        checkHealth(),
+        getDashboardStats(),
+        getAuditLog(doctorId),
+      ]);
+      setBlockchainStatus(health.status === 'OK' ? 'live' : 'error');
+      setStats(s);
+      setActivity(log.slice(0, 6));
+    } catch {
+      setBlockchainStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const statCards = [
+    { label: 'Total Patients', value: stats.totalPatients, icon: Users, color: 'blue' },
+    { label: "Today's Appointments", value: stats.todayAppointments, icon: Calendar, color: 'green' },
+    { label: 'Pending Records', value: stats.pendingRecords, icon: FileText, color: 'orange' },
+    { label: 'On-chain Sync Rate', value: `${stats.syncRate}%`, icon: Activity, color: 'purple', trend: stats.syncRate >= 95 },
+  ];
+
   return (
     <div className="page-container">
       <div className="page-header animate-fade-in">
         <div>
-          <h1 className="heading-2 page-title">Welcome back, Dr. Jenkins</h1>
-          <p className="page-subtitle">Here's your daily overview for {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+          <h1 className="heading-2 page-title">Dashboard</h1>
+          <p className="page-subtitle">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Blockchain Status Pill */}
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.4rem 1rem', borderRadius: '999px',
+            fontSize: '0.85rem', fontWeight: 600,
+            background: blockchainStatus === 'live' ? 'rgba(16,185,129,0.1)' : blockchainStatus === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(100,116,139,0.1)',
+            color: blockchainStatus === 'live' ? '#10B981' : blockchainStatus === 'error' ? '#EF4444' : '#64748B',
+            border: `1px solid ${blockchainStatus === 'live' ? '#10B981' : blockchainStatus === 'error' ? '#EF4444' : '#94A3B8'}`,
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
+            {blockchainStatus === 'live' ? 'Hyperledger Fabric — Live' : blockchainStatus === 'error' ? 'Blockchain Offline' : 'Connecting…'}
+          </span>
+          <button className="btn-outline" onClick={load} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh
+          </button>
         </div>
       </div>
 
+      {loading && (
+        <p className="page-subtitle" style={{ marginBottom: '1.5rem' }}>Loading live blockchain data…</p>
+      )}
+
       <div className="dashboard-grid animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <div className="stats-row">
-          <div className="stat-card">
-            <div className="stat-icon-wrapper blue">
-              <Users size={24} />
-            </div>
-            <div className="stat-value">
-              1,248
-              <span className="stat-trend positive">
-                <TrendingUp size={16} /> +12%
-              </span>
-            </div>
-            <div className="stat-label">Total Patients</div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon-wrapper green">
-              <Calendar size={24} />
-            </div>
-            <div className="stat-value">24</div>
-            <div className="stat-label">Today's Appointments</div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon-wrapper orange">
-              <FileText size={24} />
-            </div>
-            <div className="stat-value">156</div>
-            <div className="stat-label">Pending Reviews</div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon-wrapper purple">
-              <Activity size={24} />
-            </div>
-            <div className="stat-value">
-              98%
-              <span className="stat-trend positive">
-                <TrendingUp size={16} /> +1%
-              </span>
-            </div>
-            <div className="stat-label">On-chain Sync Rate</div>
-          </div>
+          {statCards.map((card, i) => {
+            const Icon = card.icon;
+            return (
+              <div className="stat-card" key={i}>
+                <div className={`stat-icon-wrapper ${card.color}`}>
+                  <Icon size={24} />
+                </div>
+                <div className="stat-value">
+                  {loading ? '—' : card.value}
+                  {card.trend !== undefined && !loading && (
+                    <span className={`stat-trend ${card.trend ? 'positive' : 'negative'}`}>
+                      <TrendingUp size={16} /> {card.trend ? 'Good' : 'Low'}
+                    </span>
+                  )}
+                </div>
+                <div className="stat-label">{card.label}</div>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="appointments-area">
+        <div className="activity-area" style={{ gridColumn: 'span 12' }}>
           <div className="card-header">
-            <h3 className="card-title">Upcoming Appointments</h3>
-            <a href="#" className="view-all">View Schedule</a>
+            <h3 className="card-title">Recent Blockchain Activity</h3>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Immutable audit trail from Hyperledger Fabric</span>
           </div>
-          <div className="appointment-list">
-            {[
-              { name: 'Michael Chen', time: '09:00 AM', type: 'Follow up - Cardiology', status: 'Upcoming', img: 'MC' },
-              { name: 'Emma Watson', time: '10:30 AM', type: 'Annual Checkup', status: 'Upcoming', img: 'EW' },
-              { name: 'James Rodriguez', time: '11:45 AM', type: 'ECG Results Review', status: 'Upcoming', img: 'JR' },
-              { name: 'Sophia Miller', time: '02:00 PM', type: 'Consultation', status: 'Upcoming', img: 'SM' },
-            ].map((apt, i) => (
-              <div className="appointment-item" key={i}>
-                <div className="patient-info">
-                  <div className="patient-avatar" style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    backgroundColor: `hsl(${i * 60 + 200}, 70%, 85%)`, 
-                    color: `hsl(${i * 60 + 200}, 70%, 30%)`, 
-                    fontWeight: 'bold' 
-                  }}>
-                    {apt.img}
+          {activity.length === 0 && !loading ? (
+            <p className="page-subtitle">No recent activity found on the ledger for your account.</p>
+          ) : (
+            <div className="activity-feed">
+              {activity.map((entry, i) => (
+                <div className="activity-item" key={entry.id || i}>
+                  <div className="activity-icon">
+                    <FileText size={18} />
                   </div>
-                  <div className="patient-details">
-                    <h4>{apt.name}</h4>
-                    <p>{apt.type}</p>
+                  <div className="activity-content">
+                    <p className="activity-text">
+                      <strong>{entry.action}</strong> — {entry.details}
+                    </p>
+                    <span className="activity-time">
+                      {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'Just now'} · Actor: {entry.actor}
+                    </span>
                   </div>
                 </div>
-                <div className="appointment-time">
-                  <span className="time-badge">{apt.time}</span>
-                  <span className={`status-badge status-${apt.status.toLowerCase()}`}>{apt.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="activity-area">
-          <div className="card-header">
-            <h3 className="card-title">Recent Activity</h3>
-          </div>
-          <div className="activity-feed">
-            <div className="activity-item">
-              <div className="activity-icon">
-                <FileText size={18} />
-              </div>
-              <div className="activity-content">
-                <p className="activity-text"><strong>Michael Chen's</strong> lab results synced to blockchain.</p>
-                <span className="activity-time">10 mins ago</span>
-              </div>
+              ))}
             </div>
-            <div className="activity-item">
-              <div className="activity-icon">
-                <Clock size={18} />
-              </div>
-              <div className="activity-content">
-                <p className="activity-text">Appointment rescheduled with <strong>Emma Watson</strong>.</p>
-                <span className="activity-time">1 hour ago</span>
-              </div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-icon">
-                <ShieldCheck size={18} />
-              </div>
-              <div className="activity-content">
-                <p className="activity-text">Access granted by <strong>James Rodriguez</strong>.</p>
-                <span className="activity-time">2 hours ago</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-const ShieldCheck: React.FC<{size?: number}> = ({size = 18}) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-  >
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
-  </svg>
-);
 
 export default Dashboard;
