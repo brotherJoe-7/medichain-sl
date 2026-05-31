@@ -223,28 +223,26 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Access</Text>
           <View style={styles.actionGrid}>
-            
             <TouchableOpacity style={styles.flatActionCard} onPress={() => navigation.navigate('ExploreDoctors')} activeOpacity={0.7}>
               <View style={[styles.cleanActionIconBg, { backgroundColor: theme.primaryLight }]}> 
-                <FontAwesome5 name="user-md" size={22} color={theme.primary} />
+                <FontAwesome5 name="user-md" size={18} color={theme.primary} />
               </View>
               <Text style={styles.cleanActionLabel}>Find Doctor</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatActionCard} onPress={() => navigation.navigate('ReportUpload')} activeOpacity={0.7}>
               <View style={[styles.cleanActionIconBg, { backgroundColor: theme.primaryLight }]}> 
-                <Ionicons name="document-text" size={22} color={theme.primary} />
+                <Ionicons name="document-text" size={18} color={theme.primary} />
               </View>
               <Text style={styles.cleanActionLabel}>Add Report</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatActionCard} onPress={() => navigation.navigate('Security')} activeOpacity={0.7}>
               <View style={[styles.cleanActionIconBg, { backgroundColor: theme.primaryLight }]}> 
-                <Ionicons name="qr-code" size={22} color={theme.primary} />
+                <Ionicons name="qr-code" size={18} color={theme.primary} />
               </View>
               <Text style={styles.cleanActionLabel}>Share ID</Text>
             </TouchableOpacity>
-
           </View>
         </View>
 
@@ -533,33 +531,31 @@ const styles = StyleSheet.create({
   // ═══ QUICK ACTIONS CONTENT ═══
   actionGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginHorizontal: -Spacing.sm,
+    alignItems: 'center',
   },
   flatActionCard: {
-    flexBasis: '48%',
-    minWidth: 150,
-    marginHorizontal: Spacing.sm,
-    marginBottom: Spacing.md,
+    flexBasis: '32%',
+    maxWidth: '32%',
+    minWidth: 96,
     backgroundColor: Colors.white,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.neutral200,
     alignItems: 'center',
   },
   cleanActionIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.lg, // Consistent radius
+    width: 40,
+    height: 40,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   cleanActionLabel: {
-    fontSize: FontSize.bodySmall,
+    fontSize: FontSize.caption,
     fontWeight: FontWeight.bold,
     color: Colors.neutral700,
     textAlign: 'center',

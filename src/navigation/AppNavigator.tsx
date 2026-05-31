@@ -2,8 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Radius } from '../theme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors, ThemePresets } from '../theme';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -19,6 +20,7 @@ import SecurityScreen from '../screens/SecurityScreen';
 import ReportUploadScreen from '../screens/ReportUploadScreen';
 import DoctorScanScreen from '../screens/DoctorScanScreen';
 import AllergiesScreen from '../screens/AllergiesScreen';
+import AddMedicationScreen from '../screens/AddMedicationScreen';
 import HelpCenterScreen from '../screens/HelpCenterScreen';
 import DataPrivacyScreen from '../screens/DataPrivacyScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
@@ -28,12 +30,15 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
+  const insets = useSafeAreaInsets();
+  const themeChoice = useStore((state) => state.themeChoice);
+  const theme = ThemePresets[themeChoice] || ThemePresets.classic;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           let iconName: any;
-
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Records') {
@@ -43,34 +48,30 @@ function TabNavigator() {
           } else if (route.name === 'Profile') {
             iconName = focused ? 'account' : 'account-outline';
           }
-
-          return <MaterialCommunityIcons name={iconName} size={28} color={color} />;
+          return <MaterialCommunityIcons name={iconName} size={25} color={color} />;
         },
-        tabBarActiveTintColor: Colors.primary,
+        tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: '#94A3B8',
         headerShown: false,
+        // Standard full-width bar — like WhatsApp / standard apps
         tabBarStyle: {
-          position: 'absolute',
-          bottom: 25, // Increased bottom margin to prevent collision with OS nav bar/home indicator
-          left: Spacing.lg,
-          right: Spacing.lg,
-          height: 65,
-          paddingBottom: 8,
+          backgroundColor: theme.surface,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          height: 56 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
-          borderRadius: Radius.xl,
-          backgroundColor: 'white',
-          borderWidth: 1,
-          borderColor: '#E2E8F0',
-          elevation: 8,
+          elevation: 10,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
-        }
+          marginTop: 2,
+        },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -82,21 +83,19 @@ function TabNavigator() {
 }
 
 export default function AppNavigator() {
-  // Auth-gated navigation: always starts at Login if not authenticated
   const isAuthenticated = useStore((state) => state.isAuthenticated);
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
-          // Auth screens
           <Stack.Screen name="Login" component={LoginScreen} />
         ) : (
-          // App screens — only accessible when authenticated
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
             <Stack.Screen name="ExploreDoctors" component={ExploreDoctorsScreen} />
             <Stack.Screen name="Medications" component={MedicationsScreen} />
+            <Stack.Screen name="AddMedication" component={AddMedicationScreen} />
             <Stack.Screen name="DoctorProfile" component={DoctorProfileScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Security" component={SecurityScreen} />
@@ -112,4 +111,3 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
-

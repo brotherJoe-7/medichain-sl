@@ -9,18 +9,20 @@ import { StatusBar } from 'expo-status-bar';
 import { LineChart } from 'react-native-chart-kit';
 import { useStore } from '../store/useStore';
 import { Button, Card, CardBody, Toast } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import TabBarSpacer from '../components/TabBarSpacer';
+
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets } from '../theme';
 import { Record as MedicalRecord } from '../types';
 
 const { width } = Dimensions.get('window');
 
 const TYPE_META: { [key: string]: { color: string; bg: string; icon: string } } = {
-  Laboratory:  { color: '#2563EB', bg: '#DBEAFE', icon: 'test-tube' },
-  Radiology:   { color: '#7C3AED', bg: '#EDE9FE', icon: 'radioactive' },
-  General:     { color: '#059669', bg: '#D1FAE5', icon: 'clipboard-pulse' },
-  Prescription:{ color: '#D97706', bg: '#FEF3C7', icon: 'pill' },
-  Referral:    { color: '#DC2626', bg: '#FEE2E2', icon: 'account-arrow-right' },
-  Other:       { color: '#475569', bg: '#F1F5F9', icon: 'file-document' },
+  Laboratory:  { color: Colors.primaryDark, bg: Colors.primaryLight, icon: 'test-tube' },
+  Radiology:   { color: Colors.lavendarDark, bg: Colors.lavender, icon: 'radioactive' },
+  General:     { color: Colors.success, bg: Colors.successLight, icon: 'clipboard-pulse' },
+  Prescription:{ color: Colors.warning, bg: Colors.warningLight, icon: 'pill' },
+  Referral:    { color: Colors.danger, bg: Colors.dangerLight, icon: 'account-arrow-right' },
+  Other:       { color: Colors.neutral600, bg: Colors.neutral100, icon: 'file-document' },
 };
 
 function getTypeMeta(type: string) {
@@ -29,7 +31,8 @@ function getTypeMeta(type: string) {
 
 export default function RecordsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { records, healthMetrics, removeRecord } = useStore();
+  const { records, healthMetrics, removeRecord, themeChoice } = useStore();
+  const theme = ThemePresets[themeChoice];
   const toastRef = useRef<any>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const [searchQuery, setSearchQuery]   = useState('');
@@ -96,11 +99,11 @@ export default function RecordsScreen({ navigation }: any) {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar style="dark" />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: theme.primary }]}>
         <View>
           <Text style={styles.headerTitle}>Medical Vault</Text>
           <Text style={styles.headerSub}>{records.length} records secured</Text>
@@ -109,19 +112,19 @@ export default function RecordsScreen({ navigation }: any) {
           style={styles.addButton}
           onPress={() => navigation.navigate('ReportUpload')}
         >
-          <Ionicons name="add" size={26} color="white" />
+          <Ionicons name="add" size={26} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: theme.surface }]}> 
         {(['List', 'Analytics'] as const).map(t => (
           <TouchableOpacity
             key={t}
-            style={[styles.tab, activeTab === t && styles.activeTab]}
+            style={[styles.tab, activeTab === t && { backgroundColor: theme.primary, borderColor: theme.primary }]}
             onPress={() => setActiveTab(t)}
           >
-            <Text style={[styles.tabText, activeTab === t && styles.activeTabText]}>{t}</Text>
+            <Text style={[styles.tabText, activeTab === t && { color: theme.surface }]}>{t}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -131,17 +134,17 @@ export default function RecordsScreen({ navigation }: any) {
           <>
             {/* Search */}
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#94A3B8" />
+              <Ionicons name="search" size={20} color={theme.textMuted} />
               <TextInput
                 placeholder="Search records, doctors..."
                 style={styles.searchInput}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                  <Ionicons name="close-circle" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -151,17 +154,17 @@ export default function RecordsScreen({ navigation }: any) {
               {['All', 'Laboratory', 'General', 'Radiology', 'Prescription'].map(f => (
                 <TouchableOpacity
                   key={f}
-                  style={[styles.filterChip, activeFilter === f && styles.activeFilter]}
+                  style={[styles.filterChip, activeFilter === f && { backgroundColor: theme.primary, borderColor: theme.primary }]}
                   onPress={() => setActiveFilter(f)}
                 >
-                  <Text style={[styles.filterText, activeFilter === f && styles.activeFilterText]}>{f}</Text>
+                  <Text style={[styles.filterText, activeFilter === f && { color: theme.surface }]}>{f}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
             {filteredRecords.length === 0 ? (
               <View style={styles.emptyState}>
-                <MaterialCommunityIcons name="file-search-outline" size={72} color="#CBD5E1" />
+                <MaterialCommunityIcons name="file-search-outline" size={72} color={theme.primary} />
                 <Text style={styles.emptyTitle}>No records found</Text>
                 <Text style={styles.emptySubtitle}>Tap + to upload your first medical document</Text>
                 <TouchableOpacity style={styles.emptyBtn} onPress={() => navigation.navigate('ReportUpload')}>
@@ -186,7 +189,7 @@ export default function RecordsScreen({ navigation }: any) {
                         <Text style={styles.recordTitle} numberOfLines={1}>{record.title}</Text>
                         {record.notarized && (
                           <View style={styles.notarizedBadge}>
-                            <Ionicons name="shield-checkmark" size={14} color="#059669" />
+                            <Ionicons name="shield-checkmark" size={14} color={Colors.success} />
                           </View>
                         )}
                       </View>
@@ -198,7 +201,7 @@ export default function RecordsScreen({ navigation }: any) {
                         <Text style={styles.recordDate}>{record.date}</Text>
                       </View>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+                    <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                   </TouchableOpacity>
                 );
               })
@@ -213,16 +216,16 @@ export default function RecordsScreen({ navigation }: any) {
                 <LineChart
                   data={{
                     labels: glucoseData.map(m => m.date.split('-')[2]),
-                    datasets: [{ data: glucoseData.map(m => m.value), color: () => '#2563EB', strokeWidth: 3 }],
+                    datasets: [{ data: glucoseData.map(m => m.value), color: () => Colors.primaryDark, strokeWidth: 3 }],
                   }}
                   width={width - 60}
                   height={200}
                   chartConfig={{
-                    backgroundColor: '#fff', backgroundGradientFrom: '#fff', backgroundGradientTo: '#fff',
+                    backgroundColor: Colors.white, backgroundGradientFrom: Colors.white, backgroundGradientTo: Colors.white,
                     decimalPlaces: 0,
-                    color: (o = 1) => `rgba(37,99,235,${o})`,
-                    labelColor: (o = 1) => `rgba(100,116,139,${o})`,
-                    propsForDots: { r: '5', strokeWidth: '2', stroke: '#2563EB' },
+                    color: (o = 1) => Colors.primaryDark,
+                    labelColor: (o = 1) => Colors.textMuted,
+                    propsForDots: { r: '5', strokeWidth: '2', stroke: Colors.primaryDark },
                   }}
                   bezier
                   style={{ borderRadius: 12 }}
@@ -236,7 +239,7 @@ export default function RecordsScreen({ navigation }: any) {
                   </View>
                   <View style={styles.summaryItem}>
                     <Text style={styles.summaryLabel}>Status</Text>
-                    <Text style={[styles.summaryValue, { color: '#10B981' }]}>Stable</Text>
+                    <Text style={[styles.summaryValue, { color: Colors.success }]}>Stable</Text>
                   </View>
                   <View style={styles.summaryItem}>
                     <Text style={styles.summaryLabel}>Records</Text>
@@ -248,10 +251,10 @@ export default function RecordsScreen({ navigation }: any) {
 
             <View style={styles.metricsGrid}>
               {[
-                { icon: 'heart-pulse', color: '#EF4444', label: 'Heart Rate', value: '72 bpm' },
-                { icon: 'water', color: '#3B82F6', label: 'Hydration', value: '1.8 L' },
-                { icon: 'thermometer', color: '#F59E0B', label: 'Temperature', value: '36.6 °C' },
-                { icon: 'lungs', color: '#8B5CF6', label: 'SpO2', value: '98%' },
+                { icon: 'heart-pulse', color: Colors.danger, label: 'Heart Rate', value: '72 bpm' },
+                { icon: 'water', color: Colors.primary, label: 'Hydration', value: '1.8 L' },
+                { icon: 'thermometer', color: Colors.warning, label: 'Temperature', value: '36.6 °C' },
+                { icon: 'lungs', color: Colors.lavendarDark, label: 'SpO2', value: '98%' },
               ].map(m => (
                 <View key={m.label} style={styles.metricCard}>
                   <MaterialCommunityIcons name={m.icon as any} size={28} color={m.color} />
@@ -261,17 +264,18 @@ export default function RecordsScreen({ navigation }: any) {
               ))}
             </View>
 
-            <View style={styles.insightCard}>
-              <Ionicons name="bulb" size={26} color="#D97706" />
+            <View style={[styles.insightCard, { backgroundColor: Colors.warningLight, borderColor: Colors.warningLight }]}>
+              <Ionicons name="bulb" size={26} color={Colors.warning} />
               <View style={styles.insightContent}>
-                <Text style={styles.insightTitle}>AI Health Insight</Text>
-                <Text style={styles.insightText}>
+                <Text style={[styles.insightTitle, { color: Colors.warningDark }]}>AI Health Insight</Text>
+                <Text style={[styles.insightText, { color: Colors.warningDark }]}>
                   Your glucose is stable. A 20-minute morning walk can help maintain this trend and improve cardiovascular health.
                 </Text>
               </View>
             </View>
           </View>
         )}
+        <TabBarSpacer />
       </ScrollView>
 
       {/* Bottom Sheet Overlay */}
@@ -402,7 +406,7 @@ export default function RecordsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: Colors.neutral50 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md,
@@ -427,7 +431,7 @@ const styles = StyleSheet.create({
   activeTab: { backgroundColor: Colors.neutral900 },
   tabText: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.neutral600 },
   activeTabText: { color: Colors.white },
-  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.xxxl },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 0 },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.white, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
@@ -492,13 +496,13 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: FontSize.bodySmall, color: Colors.neutral600, marginTop: Spacing.md, marginBottom: Spacing.sm, fontWeight: FontWeight.medium },
   metricValue: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.neutral900 },
   insightCard: {
-    flexDirection: 'row', backgroundColor: '#FFFBEB', borderRadius: Radius.lg,
+    flexDirection: 'row', backgroundColor: Colors.warningLight, borderRadius: Radius.lg,
     padding: Spacing.lg, alignItems: 'flex-start',
-    borderWidth: 1.5, borderColor: '#FEF3C7',
+    borderWidth: 1.5, borderColor: Colors.warningLight,
   },
   insightContent: { flex: 1, marginLeft: Spacing.lg },
-  insightTitle: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: '#B45309', marginBottom: Spacing.sm },
-  insightText: { fontSize: FontSize.body, color: '#92400E', lineHeight: 22, fontWeight: FontWeight.regular },
+  insightTitle: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.warningDark, marginBottom: Spacing.sm },
+  insightText: { fontSize: FontSize.body, color: Colors.warningDark, lineHeight: 22, fontWeight: FontWeight.regular },
 
   // Bottom Sheet
   overlay: {

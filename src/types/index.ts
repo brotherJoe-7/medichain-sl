@@ -16,6 +16,7 @@ export interface Medication {
   time: string;
   frequency?: string; // BUG FIX #4: was missing, caused runtime crash in MedicationsScreen
   status: 'pending' | 'taken' | 'skipped';
+  patientId?: string;
 }
 
 export interface Record {
@@ -31,6 +32,7 @@ export interface Record {
   notarized?: boolean;  // BUG FIX #3: added for blockchain notarization
   supersedes?: string;  // ARCHITECTURE GAP #8: Points to the ID of the record this one amends
   fhirResource?: any;   // ARCHITECTURE GAP #6: HL7 FHIR R4 raw resource data
+  patientId?: string;
 }
 
 // ARCHITECTURE GAP #5: Async Doctor Access Requests
@@ -41,6 +43,7 @@ export interface DoctorAccessRequest {
   hospital: string;
   requestedAt: string;
   status: 'pending' | 'approved' | 'denied';
+  patientId?: string;
 }
 
 export interface Appointment {
@@ -50,6 +53,7 @@ export interface Appointment {
   date: string;
   time: string;
   status: 'upcoming' | 'completed' | 'cancelled';
+  patientId?: string;
 }
 
 export interface BlockchainLog {
@@ -58,6 +62,7 @@ export interface BlockchainLog {
   timestamp: string;
   details: string;
   txHash: string;
+  patientId?: string;
 }
 
 export interface HealthMetric {
@@ -66,6 +71,7 @@ export interface HealthMetric {
   value: number;
   unit: string;
   date: string;
+  patientId?: string;
 }
 
 // BUG FIX #11: New Allergy type — was completely missing
@@ -75,4 +81,5 @@ export interface Allergy {
   name: string;
   severity: 'Low' | 'High' | 'Critical';
   reaction: string;
+  patientId?: string;
 }

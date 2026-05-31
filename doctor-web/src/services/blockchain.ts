@@ -1,6 +1,6 @@
 import type { MedicalRecord, BlockchainStatus } from '../types';
 
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000/api';
+const GATEWAY_URL = (import.meta as any).env.VITE_GATEWAY_URL || 'http://localhost:3000/api';
 
 // ─── Hyperledger Fabric API Connection (Replacing MetaMask) ─────────────
 

@@ -15,12 +15,13 @@ export const useBlockchain = () => {
 
   useEffect(() => {
     checkStatus();
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', checkStatus);
-      window.ethereum.on('chainChanged', checkStatus);
+    const ethereum = (window as any).ethereum;
+    if (ethereum) {
+      ethereum.on('accountsChanged', checkStatus);
+      ethereum.on('chainChanged', checkStatus);
       return () => {
-        window.ethereum.removeListener('accountsChanged', checkStatus);
-        window.ethereum.removeListener('chainChanged', checkStatus);
+        ethereum.removeListener('accountsChanged', checkStatus);
+        ethereum.removeListener('chainChanged', checkStatus);
       };
     }
   }, [checkStatus]);

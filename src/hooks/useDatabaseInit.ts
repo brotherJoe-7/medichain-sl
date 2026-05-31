@@ -3,7 +3,7 @@
  * Returns isReady = true once BOTH the DB is loaded AND the auth check is done.
  */
 import { useEffect, useState } from 'react';
-import { initDatabase } from '../services/database';
+import { initDatabase, UserDB } from '../services/database';
 import { AuthService } from '../services/authService';
 import { useStore } from '../store/useStore';
 
@@ -21,17 +21,30 @@ export function useDatabaseInit(): boolean {
         // 1. Open SQLite and create tables
         await initDatabase();
 
-        // 2. Load all persisted data into Zustand
-        await loadFromDatabase();
-
-        // 3. Restore secure auth session (auto-login if token still valid)
+        // 2. Restore secure auth session before loading content
         const session = await AuthService.restoreSession();
         if (session && mounted) {
-          // Load user from the SQLite store (loadFromDatabase already sets it)
-          // Just ensure isAuthenticated is flipped
           setAuthenticated(true);
           console.log('[Auth] Session restored for:', session.email);
+
+          const storedUser = await UserDB.getById(session.userId);
+          if (storedUser) {
+            setUser(storedUser);
+          } else {
+            setUser({
+              id: session.userId,
+              name: 'Patient',
+              email: session.email,
+              phone: '',
+              bloodType: '',
+              weight: '',
+              height: '',
+            });
+          }
         }
+
+        // 3. Load all persisted data into Zustand
+        await loadFromDatabase();
       } catch (err) {
         console.error('[DB] Init error:', err);
       } finally {

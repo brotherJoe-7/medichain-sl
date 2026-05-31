@@ -175,11 +175,11 @@ export default function NotificationsScreen({ navigation }: any) {
 function getIconColor(type: string) {
   switch (type) {
     case 'appointment':
-      return { color: Colors.primary, bgColor: { backgroundColor: 'rgba(59, 130, 246, 0.1)' } };
+      return { color: Colors.primary, bgColor: { backgroundColor: Colors.primaryLight } };
     case 'medication':
-      return { color: Colors.success, bgColor: { backgroundColor: 'rgba(34, 197, 94, 0.1)' } };
+      return { color: Colors.success, bgColor: { backgroundColor: Colors.successLight } };
     case 'access':
-      return { color: Colors.warning, bgColor: { backgroundColor: 'rgba(251, 146, 60, 0.1)' } };
+      return { color: Colors.warning, bgColor: { backgroundColor: Colors.warningLight } };
     default:
       return { color: Colors.neutral600, bgColor: { backgroundColor: Colors.neutral200 } };
   }
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: Colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
   },

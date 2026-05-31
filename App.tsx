@@ -21,7 +21,7 @@ export default function App() {
             <ActivityIndicator size="large" color="#3B82F6" />
           </View>
           <Text style={styles.splashTitle}>MediChain SL</Text>
-          <Text style={styles.splashSub}>Initializing secure vault…</Text>
+          <Text style={styles.splashSub}>Preparing secure vault and patient data…</Text>
         </View>
       </SafeAreaProvider>
     );

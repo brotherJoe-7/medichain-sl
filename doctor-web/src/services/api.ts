@@ -2,7 +2,7 @@
 // Single source of truth for all backend communication.
 // Backend URL: http://localhost:3000
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -91,6 +91,12 @@ export const emergencyAccess = (patientId: string, doctorId: string) =>
   request<{ success: boolean; payload: any }>('/emergency/access', {
     method: 'POST',
     body: JSON.stringify({ patientId, doctorId }),
+  });
+
+export const verifyQr = (token: string, doctorId: string) =>
+  request<{ success: boolean; payload: any }>('/qr/verify', {
+    method: 'POST',
+    body: JSON.stringify({ token, doctorId }),
   });
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────

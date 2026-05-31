@@ -5,12 +5,13 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
 import { Button, Card, CardBody, Badge, Toast } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets } from '../theme';
 import { Allergy } from '../types';
 
 export default function AllergiesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { allergies, addAllergy, removeAllergy } = useStore();
+  const { allergies, addAllergy, removeAllergy, themeChoice } = useStore();
+  const theme = ThemePresets[themeChoice];
   const toastRef = useRef<any>(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -79,21 +80,21 @@ export default function AllergiesScreen({ navigation }: any) {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar style="dark" />
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.surface }]}> 
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#1E293B" />
+          <Ionicons name="chevron-back" size={24} color={theme.textBody} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Allergies</Text>
         <TouchableOpacity style={styles.addButton} onPress={showForm}>
-          <Ionicons name="add" size={24} color={Colors.primary} />
+          <Ionicons name="add" size={24} color={theme.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.infoBox}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={24} color="#B45309" />
+          <MaterialCommunityIcons name="alert-circle-outline" size={24} color={theme.warning} />
           <Text style={styles.infoText}>This information is shared with doctors during secure access sessions.</Text>
         </View>
 

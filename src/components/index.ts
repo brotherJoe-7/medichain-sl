@@ -5,3 +5,5 @@
  */
 
 export * from './shared';
+export { default as TabBarSpacer } from './TabBarSpacer';
+

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QrCode, AlertTriangle, ShieldAlert, CheckCircle, Activity, User, Phone, Stethoscope } from 'lucide-react';
 
-import { emergencyAccess } from '../services/api';
+import { verifyQr } from '../services/api';
 
 const ScanQR: React.FC = () => {
   const [scanning, setScanning] = useState(false);
@@ -12,11 +12,11 @@ const ScanQR: React.FC = () => {
     setScanning(true);
     try {
       const doctorId = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
-      
-      // Real API call to trigger blockchain audit and get payload
-      const response = await emergencyAccess('PAT-10492', doctorId);
-      
-      if (response.success) {
+      // Prompt for QR token (simulate scanning a QR code)
+      const token = window.prompt('Paste scanned QR token (JWT) from patient app');
+      if (!token) throw new Error('No token provided');
+      const response = await verifyQr(token, doctorId);
+      if (response && response.success) {
         setEmergencyData(response.payload);
         setScanned(true);
       }
