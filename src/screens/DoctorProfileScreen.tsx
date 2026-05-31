@@ -7,29 +7,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Card, CardBody, Badge, Button, Toast } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets } from '../theme';
+import { useStore } from '../store/useStore';
+import { formatLeone } from '../utils/currency';
 
 export default function DoctorProfileScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const toastRef = useRef<any>(null);
+  const { themeChoice } = useStore();
+  const theme = ThemePresets[themeChoice];
   
-  const doctor = route.params?.doctor || {
-    id: '1',
-    name: 'Dr. Sarah Wilson',
-    specialty: 'Cardiologist',
-    rating: 4.8,
-    reviews: 245,
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
-    experience: '12 years',
-    availability: 'Available Today',
-    price: '$50',
-    bio: 'Dr. Sarah Wilson is a board-certified cardiologist with over 12 years of experience in cardiac care. She specializes in preventive cardiology and management of heart conditions.',
-    education: ['Harvard Medical School', 'Johns Hopkins Hospital Residency'],
-    languages: ['English', 'Spanish', 'Mandarin'],
-    certifications: ['Board Certified Cardiologist', 'ACC Fellow'],
-  };
+  const doctor = route.params?.doctor;
 
   const handleBookAppointment = () => {
+    if (!doctor) {
+      toastRef.current?.show({
+        message: 'Doctor details are unavailable.',
+        type: 'error',
+      });
+      return;
+    }
     toastRef.current?.show({
       message: `Appointment with ${doctor.name} booked!`,
       type: 'success',
@@ -38,6 +35,21 @@ export default function DoctorProfileScreen({ navigation, route }: any) {
       navigation.goBack();
     }, 1500);
   };
+
+  if (!doctor) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
+        <StatusBar style="light" />
+        <Text style={styles.emptyTitle}>Doctor information is unavailable.</Text>
+        <Button
+          label="Go Back"
+          variant="primary"
+          onPress={() => navigation.goBack()}
+          style={{ marginTop: Spacing.lg }}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -48,7 +60,7 @@ export default function DoctorProfileScreen({ navigation, route }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* ═══ HEADER ═══ */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.md, backgroundColor: theme.primary }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -74,7 +86,7 @@ export default function DoctorProfileScreen({ navigation, route }: any) {
                 <Text style={styles.doctorName}>{doctor.name}</Text>
                 <Text style={styles.specialty}>{doctor.specialty}</Text>
                 <View style={styles.ratingContainer}>
-                  <MaterialCommunityIcons name="star" size={18} color="#FFA500" />
+                    <MaterialCommunityIcons name="star" size={18} color={Colors.warning} />
                   <Text style={styles.rating}>{doctor.rating}</Text>
                   <Text style={styles.reviews}>({doctor.reviews})</Text>
                 </View>
@@ -91,18 +103,18 @@ export default function DoctorProfileScreen({ navigation, route }: any) {
             <CardBody>
               <View style={styles.infoGrid}>
                 <View style={styles.infoItem}>
-                  <View style={[styles.infoIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-                    <MaterialCommunityIcons name="clock-outline" size={20} color={Colors.primary} />
+                <View style={[styles.infoIcon, { backgroundColor: theme.primaryLight }]}> 
+                    <MaterialCommunityIcons name="clock-outline" size={20} color={theme.primary} />
                   </View>
                   <Text style={styles.infoLabel}>Availability</Text>
                   <Text style={styles.infoValue}>{doctor.availability}</Text>
                 </View>
                 <View style={styles.infoItem}>
-                  <View style={[styles.infoIcon, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
-                    <Ionicons name="cash" size={20} color={Colors.success} />
+                <View style={[styles.infoIcon, { backgroundColor: theme.successLight }]}> 
+                    <Ionicons name="cash" size={20} color={theme.success} />
                   </View>
                   <Text style={styles.infoLabel}>Consultation Fee</Text>
-                  <Text style={styles.infoValue}>{doctor.price}</Text>
+                  <Text style={[styles.infoValue, { color: theme.primaryDark }]}>{formatLeone(doctor.price)}</Text>
                 </View>
               </View>
             </CardBody>
@@ -387,6 +399,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: FontSize.h3,
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral900,
+    textAlign: 'center',
+    marginHorizontal: Spacing.lg,
   },
 
   // ═══ BOTTOM BAR ═══

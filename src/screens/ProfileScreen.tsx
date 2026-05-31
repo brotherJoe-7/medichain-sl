@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity,
-  Image, Animated, TextInput, KeyboardAvoidingView, Platform
+  Image, Animated, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Button, Card, CardBody, Toast } from '../components';
+import TabBarSpacer from '../components/TabBarSpacer';
+
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
 import { useStore } from '../store/useStore';
 import { AuthService } from '../services/authService';
@@ -14,7 +16,13 @@ import { AuthService } from '../services/authService';
 export default function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const toastRef = useRef<any>(null);
-  const { user, setUser, logout } = useStore();
+  const { user, setUser, logout, themeChoice } = useStore();
+
+  const isProfileIncomplete = !user || !user.name || !user.email || !user.phone || !user.bloodType || !user.weight || !user.height;
+  const initials = user?.name
+    ? user.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+    : 'P';
+  const selectedThemeLabel = themeChoice.charAt(0).toUpperCase() + themeChoice.slice(1);
 
   const [showEditForm, setShowEditForm] = useState(false);
   const [editedInfo, setEditedInfo] = useState({
@@ -26,7 +34,7 @@ export default function ProfileScreen({ navigation }: any) {
     phone: user?.phone || '',
   });
 
-  const slideAnimRef = useRef(new Animated.Value(500)).current;
+  const slideAnimRef = useRef(new Animated.Value(600)).current;
   const overlayOpacityRef = useRef(new Animated.Value(0)).current;
 
   const showForm = () => {
@@ -135,22 +143,36 @@ export default function ProfileScreen({ navigation }: any) {
 
         {/* ═══ PROFILE INFO CARD ═══ */}
         <View style={styles.section}>
-          <Card style={styles.flatCard}>
+          <Card style={[styles.flatCard, styles.profileCard]}>
             <CardBody>
               <View style={styles.profileContent}>
                 <View style={styles.avatarContainer}>
-                  <Image
-                    source={{
-                      uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-                    }}
-                    style={styles.avatar}
-                  />
+                  {user?.avatar ? (
+                    <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                      <Text style={styles.avatarInitials}>{initials}</Text>
+                    </View>
+                  )}
                   <View style={styles.onlineBadge} />
                 </View>
 
-                <Text style={styles.profileName}>{user?.name || 'User'}</Text>
-                <Text style={styles.profileEmail}>{user?.email || ''}</Text>
-                <Text style={styles.profilePhone}>{user?.phone || 'No phone added'}</Text>
+                <Text style={styles.profileName}>{user?.name || 'Your Health Profile'}</Text>
+                <Text style={styles.profileEmail}>{user?.email || 'Email not set'}</Text>
+                <Text style={styles.profilePhone}>{user?.phone || 'Add your phone number'}</Text>
+
+                <View style={styles.profileBadges}>
+                  <View style={styles.profileBadge}>
+                    <Text style={styles.profileBadgeText}>Patient</Text>
+                  </View>
+                  <View style={[styles.profileBadge, styles.profileBadgeSecondary]}>
+                    <Text style={[styles.profileBadgeText, styles.profileBadgeSecondaryText]}>Verified</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.profileSummary}>
+                  Secure health access with personalized records and verified care history.
+                </Text>
               </View>
             </CardBody>
           </Card>
@@ -159,6 +181,22 @@ export default function ProfileScreen({ navigation }: any) {
         {/* ═══ HEALTH METRICS ═══ */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Health Information</Text>
+          {isProfileIncomplete && (
+            <Card style={[styles.flatCard, styles.profilePromptCard]}>
+              <CardBody>
+                <Text style={styles.profilePromptTitle}>Finish your profile</Text>
+                <Text style={styles.profilePromptText}>
+                  Complete a few details so your care plan stays personalized and accurate.
+                </Text>
+                <Button
+                  label="Update Profile"
+                  variant="primary"
+                  onPress={showForm}
+                  style={styles.profilePromptButton}
+                />
+              </CardBody>
+            </Card>
+          )}
           <Card style={styles.flatCard}>
             <CardBody>
               <View style={styles.metricsGrid}>
@@ -190,7 +228,7 @@ export default function ProfileScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Allergies')}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+            <View style={[styles.menuIconBox, { backgroundColor: Colors.dangerLight }]}>
               <MaterialCommunityIcons name="alert-decagram-outline" size={22} color={Colors.danger} />
             </View>
             <Text style={styles.flatMenuText}>Allergies</Text>
@@ -202,7 +240,7 @@ export default function ProfileScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Medications')}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
+            <View style={[styles.menuIconBox, { backgroundColor: Colors.successLight }]}>
               <MaterialCommunityIcons name="pill" size={22} color={Colors.success} />
             </View>
             <Text style={styles.flatMenuText}>Active Medications</Text>
@@ -219,7 +257,7 @@ export default function ProfileScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+            <View style={[styles.menuIconBox, { backgroundColor: Colors.primaryLight }]}>
               <Ionicons name="notifications-outline" size={22} color={Colors.primary} />
             </View>
             <Text style={styles.flatMenuText}>Notifications</Text>
@@ -231,22 +269,25 @@ export default function ProfileScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Security')}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.1)' }]}>
-              <Ionicons name="shield-checkmark-outline" size={22} color="#8B5CF6" />
+            <View style={[styles.menuIconBox, { backgroundColor: Colors.lavender }]}> 
+              <Ionicons name="color-palette-outline" size={22} color={Colors.lavendarDark} />
             </View>
-            <Text style={styles.flatMenuText}>Privacy & Security</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.flatMenuText}>Theme & Appearance</Text>
+              <Text style={styles.themeInfoText}>Current: {selectedThemeLabel}</Text>
+            </View>
             <Ionicons name="chevron-forward" size={20} color={Colors.neutral400} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.flatMenuItem}
-            onPress={() => navigation.navigate('HelpCenter')}
+            onPress={() => navigation.navigate('Security')}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIconBox, { backgroundColor: Colors.neutral200 }]}>
-              <Ionicons name="help-circle-outline" size={22} color={Colors.neutral600} />
+            <View style={[styles.menuIconBox, { backgroundColor: Colors.lavender }]}> 
+              <Ionicons name="shield-checkmark-outline" size={22} color={Colors.lavendarDark} />
             </View>
-            <Text style={styles.flatMenuText}>Help Center</Text>
+            <Text style={styles.flatMenuText}>Privacy & Security</Text>
             <Ionicons name="chevron-forward" size={20} color={Colors.neutral400} />
           </TouchableOpacity>
 
@@ -255,7 +296,7 @@ export default function ProfileScreen({ navigation }: any) {
             onPress={showForm}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+            <View style={[styles.menuIconBox, { backgroundColor: Colors.primaryLight }]}> 
               <Ionicons name="create-outline" size={22} color={Colors.primary} />
             </View>
             <Text style={styles.flatMenuText}>Edit Profile</Text>
@@ -273,7 +314,7 @@ export default function ProfileScreen({ navigation }: any) {
           />
         </View>
 
-        <View style={{ height: Spacing.xxxl }} />
+        <TabBarSpacer />
       </ScrollView>
 
       {/* ═══ EDIT FORM BOTTOM SHEET ═══ */}
@@ -297,6 +338,7 @@ export default function ProfileScreen({ navigation }: any) {
           styles.bottomSheetContainer,
           {
             transform: [{ translateY: slideAnimRef }],
+            display: showEditForm ? 'flex' : 'none',
           },
         ]}
       >
@@ -413,7 +455,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral50,
   },
   scrollContent: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: 0,
   },
 
   // ═══ HEADER ═══
@@ -472,6 +514,10 @@ const styles = StyleSheet.create({
   },
 
   // ═══ PROFILE SECTION ═══
+  profileCard: {
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+  },
   profileContent: {
     alignItems: 'center',
   },
@@ -515,16 +561,83 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodySmall,
     color: Colors.neutral500,
     textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  profileBadges: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  profileBadge: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.primaryLight,
+  },
+  profileBadgeSecondary: {
+    backgroundColor: Colors.successLight,
+  },
+  profileBadgeText: {
+    fontSize: FontSize.label,
+    fontWeight: FontWeight.bold,
+    color: Colors.primaryDark,
+  },
+  profileBadgeSecondaryText: {
+    color: Colors.successDark,
+  },
+  profileSummary: {
+    fontSize: FontSize.bodySmall,
+    color: Colors.neutral600,
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 280,
+  },
+  profilePromptCard: {
+    backgroundColor: Colors.primaryLight,
+    borderColor: Colors.primary,
+  },
+  profilePromptTitle: {
+    fontSize: FontSize.h4,
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral900,
+    marginBottom: Spacing.xs,
+  },
+  profilePromptText: {
+    fontSize: FontSize.bodySmall,
+    color: Colors.neutral700,
+    marginBottom: Spacing.md,
+    lineHeight: 20,
+  },
+  profilePromptButton: {
+    alignSelf: 'flex-start',
+  },
+  avatarPlaceholder: {
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    fontSize: FontSize.h3,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
+  },
+  themeInfoText: {
+    fontSize: FontSize.bodySmall,
+    color: Colors.neutral500,
+    marginTop: Spacing.xs,
   },
 
   // ═══ METRICS ═══
   metricsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   metricItem: {
-    flex: 1,
+    flexBasis: '30%',
+    minWidth: 90,
     alignItems: 'center',
+    marginBottom: Spacing.md,
   },
   metricLabel: {
     fontSize: FontSize.bodySmall,
@@ -647,6 +760,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     borderTopWidth: 1,
     borderTopColor: Colors.neutral200,
-    gap: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 });

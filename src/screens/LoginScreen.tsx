@@ -2,9 +2,9 @@ import React, { useState, useRef } from 'react';
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator,
-  Animated, Dimensions, ScrollView,
+  Animated, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,8 +12,6 @@ import { Button, Toast } from '../components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../theme';
 import { useStore } from '../store/useStore';
 import { AuthService } from '../services/authService';
-
-const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const [email, setEmail]           = useState('');
@@ -23,6 +21,7 @@ export default function LoginScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passFocused, setPassFocused]   = useState(false);
 
+  const insets = useSafeAreaInsets();
   const { setUser, setAuthenticated, user } = useStore();
   const toastRef = useRef<any>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -56,17 +55,19 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       const session = await AuthService.login(trimmedEmail, password);
-      setUser(
-        user ?? {
-          id: session.userId,
-          name: 'Alex Johnson',
-          email: session.email,
-          phone: '+232 76 000 001',
-          bloodType: 'O+',
-          weight: '75 kg',
-          height: '180 cm',
-        }
-      );
+      const displayName = trimmedEmail === 'patient@medichain.sl'
+        ? 'Demo Patient'
+        : trimmedEmail.split('@')[0].replace(/[-._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+      setUser({
+        id: session.userId,
+        name: displayName,
+        email: session.email,
+        phone: '',
+        bloodType: '',
+        weight: '',
+        height: '',
+      });
       setAuthenticated(true);
     } catch (err: any) {
       toastRef.current?.show({
@@ -84,7 +85,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}> 
       <StatusBar style="light" />
       <LinearGradient colors={[Colors.neutral900, Colors.neutral900]} style={StyleSheet.absoluteFill} />
       
@@ -93,7 +94,7 @@ export default function LoginScreen() {
         style={styles.kav}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, { paddingTop: Spacing.lg, paddingBottom: Spacing.xl }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -190,7 +191,7 @@ export default function LoginScreen() {
       </KeyboardAvoidingView>
 
       <Toast ref={toastRef} />
-    </View>
+    </SafeAreaView>
   );
 }
 
