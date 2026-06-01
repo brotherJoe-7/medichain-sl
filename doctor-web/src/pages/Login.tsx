@@ -1,17 +1,23 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, LogIn } from 'lucide-react';
 import { loginDoctor } from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [doctorId, setDoctorId] = useState('doctor_smith');
-  const [password, setPassword] = useState('password');
+  const [doctorId, setDoctorId] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    if (!doctorId.trim() || !password.trim()) {
+      setError('Doctor ID and password are required.');
+      return;
+    }
+
     setError(null);
     setLoading(true);
     try {
@@ -19,62 +25,118 @@ const Login = () => {
       localStorage.setItem('mc_doctor_jwt', response.token);
       localStorage.setItem('mc_doctor_id', response.doctorId);
       localStorage.setItem('mc_profile_name', response.name);
-      navigate('/scan-qr');
+      setDoctorId('');
+      setPassword('');
+      navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.message || 'Login failed.');
+      setError(err?.message || 'Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header animate-fade-in">
-        <div>
-          <h1 className="heading-2 page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ShieldCheck size={28} /> Doctor Login
-          </h1>
-          <p className="page-subtitle">Sign in with your doctor credentials to authorize emergency access.</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-color)', padding: '2rem' }}>
+      <div style={{ width: '100%', maxWidth: '420px' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShieldCheck size={28} color="white" />
+            </div>
+          </div>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.5rem' }}>MediChain</h1>
+          <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: 0 }}>Doctor Portal Login</p>
         </div>
+
+        {/* Form Card */}
+        <form onSubmit={handleSubmit} style={{ backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '2.5rem', boxShadow: 'var(--shadow-md)' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+              Doctor ID
+            </label>
+            <input
+              type="text"
+              value={doctorId}
+              onChange={(e) => setDoctorId(e.target.value)}
+              placeholder="e.g., doctor_smith"
+              autoComplete="username"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem',
+                borderRadius: '0.75rem',
+                border: error ? '1px solid #EF4444' : '1px solid var(--border)',
+                backgroundColor: 'var(--bg-color)',
+                color: 'var(--text-main)',
+                fontSize: '0.95rem',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem',
+                borderRadius: '0.75rem',
+                border: error ? '1px solid #EF4444' : '1px solid var(--border)',
+                backgroundColor: 'var(--bg-color)',
+                color: 'var(--text-main)',
+                fontSize: '0.95rem',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #EF4444', color: '#991B1B', padding: '0.875rem 1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !doctorId.trim() || !password.trim()}
+            style={{
+              width: '100%',
+              padding: '0.95rem 1.5rem',
+              borderRadius: '0.75rem',
+              border: 'none',
+              backgroundColor: loading || !doctorId.trim() || !password.trim() ? 'var(--text-muted)' : 'var(--primary)',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              opacity: loading || !doctorId.trim() || !password.trim() ? 0.6 : 1,
+            }}
+          >
+            <LogIn size={18} /> {loading ? 'Signing in…' : 'Sign in as Doctor'}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Secure login using blockchain-verified credentials.
+        </p>
       </div>
-
-      <form onSubmit={handleSubmit} className="auth-card animate-fade-in" style={{ maxWidth: '520px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label className="form-label">Doctor ID</label>
-          <input
-            value={doctorId}
-            onChange={(e) => setDoctorId(e.target.value)}
-            className="form-input"
-            placeholder="doctor_smith"
-            autoComplete="username"
-          />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label className="form-label">Password</label>
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            className="form-input"
-            placeholder="password"
-            autoComplete="current-password"
-          />
-        </div>
-
-        {error && (
-          <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>
-        )}
-
-        <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
-          {loading ? 'Signing in…' : 'Sign in as Doctor'}
-        </button>
-
-        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-          <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/')}>Return Home</button>
-          <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={() => navigate('/scan-qr')}>Scan without login</button>
-        </div>
-      </form>
     </div>
   );
 };
