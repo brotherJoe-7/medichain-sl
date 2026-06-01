@@ -98,7 +98,17 @@ export const verifyQr = (token: string, doctorId: string) =>
     method: 'POST',
     body: JSON.stringify({ token, doctorId }),
   });
+export interface DoctorLoginResponse {
+  token: string;
+  doctorId: string;
+  name: string;
+}
 
+export const loginDoctor = (id: string, password: string) =>
+  request<DoctorLoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ id, password }),
+  });
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 export const getAuditLog = (actorId: string) =>
   request<any[]>(`/audit/log?actorId=${encodeURIComponent(actorId)}`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { connectWallet, disconnectWallet, getWalletStatus, isMetaMaskAvailable } from '../services/blockchain';
 import type { BlockchainStatus } from '../types';
 
