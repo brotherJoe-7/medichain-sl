@@ -95,7 +95,7 @@ const ScanQR: React.FC = () => {
         { facingMode: 'environment' },
         {
           fps: 10,
-          qrbox: { width: 220, height: 220 },
+          qrbox: { width: 160, height: 160 },
           aspectRatio: 1,
           verbose: false,
         },
