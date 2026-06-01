@@ -54,6 +54,36 @@ function broadcastWs(event) {
         });
 }
 
+// --- Simple in-memory doctor accounts (demo) ---
+const DOCTORS = [
+    { id: 'doctor_smith', password: 'password', name: 'Dr. Smith', role: 'doctor' },
+    { id: 'doctor_aminata', password: 'password', name: 'Dr. Aminata', role: 'doctor' },
+];
+
+// Auth: doctor login
+app.post('/api/auth/login', (req, res) => {
+    const { id, password } = req.body || {};
+    if (!id || !password) return res.status(400).json({ error: 'id and password required' });
+    const doc = DOCTORS.find(d => d.id === id && d.password === password);
+    if (!doc) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = jwt.sign({ id: doc.id, role: doc.role, name: doc.name }, JWT_SECRET, { expiresIn: '8h' });
+    res.json({ token, doctorId: doc.id, name: doc.name });
+});
+
+// Middleware to authenticate doctor JWT
+function authenticateDoctor(req, res, next) {
+    const auth = req.headers['authorization'] || req.headers['Authorization'];
+    if (!auth || typeof auth !== 'string' || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing Authorization' });
+    const token = auth.split(' ')[1];
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.user = payload; // set doctor info
+        return next();
+    } catch (e) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
 // Endpoint for OCR Extraction using Gemini
 app.post('/api/extract', upload.single('document'), async (req, res) => {
     try {
@@ -189,9 +219,10 @@ app.post('/api/qr/generate', (req, res) => {
 });
 
 // Verify token and return emergency payload if allowed
-app.post('/api/qr/verify', async (req, res) => {
-    const { token, doctorId } = req.body || {};
-    if (!token || !doctorId) return res.status(400).json({ error: 'token and doctorId required' });
+app.post('/api/qr/verify', authenticateDoctor, async (req, res) => {
+    const { token } = req.body || {};
+    const doctorId = req.user?.id || req.user?.sub || 'unknown';
+    if (!token) return res.status(400).json({ error: 'token required' });
     try {
         const payload = jwt.verify(token, JWT_SECRET);
         const patientId = payload.userId;
@@ -209,7 +240,6 @@ app.post('/api/qr/verify', async (req, res) => {
             broadcastWs({ type: 'qr.verified', doctorId, patientId, timestamp: Date.now() });
             return res.json({ success: true, payload: payloadObj });
         } catch (err) {
-            // Fallback simulated emergency payload
             const simulated = {
                 patientId,
                 name: 'Alex Johnson',

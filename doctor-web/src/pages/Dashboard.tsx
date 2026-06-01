@@ -23,15 +23,16 @@ const Dashboard: React.FC = () => {
   const [blockchainStatus, setBlockchainStatus] = useState<'checking' | 'live' | 'error'>('checking');
   const [loading, setLoading] = useState(true);
 
-  const doctorId = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
+  const doctorId = localStorage.getItem('mc_doctor_id') || localStorage.getItem('mc_wallet_address') || '';
 
   const load = async () => {
     setLoading(true);
     try {
+      const auditPromise = doctorId ? getAuditLog(doctorId) : Promise.resolve([] as AuditEntry[]);
       const [health, s, log] = await Promise.all([
         checkHealth(),
         getDashboardStats(),
-        getAuditLog(doctorId),
+        auditPromise,
       ]);
       setBlockchainStatus(health.status === 'OK' ? 'live' : 'error');
       setStats(s);

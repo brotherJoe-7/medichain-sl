@@ -5,8 +5,14 @@
 const BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = localStorage.getItem('mc_doctor_jwt');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  } catch {}
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   });
   if (!res.ok) {
