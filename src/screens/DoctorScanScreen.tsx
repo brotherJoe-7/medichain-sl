@@ -1,21 +1,66 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet, Text, View, TouchableOpacity, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+// @ts-ignore - optional native module
+const { BarCodeScanner } = require('expo-barcode-scanner');
+import { useNfc } from '../hooks/useNfc';
 import { Card, CardBody, Button, Toast } from '../components';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
-import { BlockchainService } from '../services';
+import { verifyQrToken } from '../services/api';
+import { DoctorAuthService } from '../services/doctorAuthService';
 
-export default function DoctorScanScreen({ navigation }: any) {
+export default function DoctorScanScreen() {
   const insets = useSafeAreaInsets();
   const toastRef = useRef<any>(null);
+  const navigation = useNavigation<any>();
+  const nfc = useNfc();
   const [isScanning, setIsScanning] = useState(false);
+  const [isReadingNfc, setIsReadingNfc] = useState(false);
+  const [doctorToken, setDoctorToken] = useState<string | null>(null);
+  const [doctorId, setDoctorId] = useState<string>('doctor_smith');
+  const [loginNeeded, setLoginNeeded] = useState(false);
   const scanLinePosition = useRef(new Animated.Value(0)).current;
 
-  const startScan = () => {
+  useEffect(() => {
+    const loadDoctorAuth = async () => {
+      const token = await DoctorAuthService.getToken();
+      const id = await DoctorAuthService.getDoctorId();
+      setDoctorToken(token);
+      if (id) setDoctorId(id);
+      setLoginNeeded(!token);
+    };
+    loadDoctorAuth();
+  }, []);
+
+  const handleVerification = async (token: string) => {
+    try {
+      const res = await verifyQrToken(token, doctorId);
+      if (res && res.success) {
+        toastRef.current?.show({ message: 'Access granted — payload received', type: 'success' });
+        setTimeout(() => navigation.goBack(), 1200);
+      } else {
+        toastRef.current?.show({ message: 'Verification failed', type: 'danger' });
+      }
+    } catch (e) {
+      toastRef.current?.show({ message: 'Scan verification error', type: 'danger' });
+    } finally {
+      setIsScanning(false);
+      setIsReadingNfc(false);
+    }
+  };
+
+  const startScan = async () => {
+    if (!doctorToken) {
+      setLoginNeeded(true);
+      toastRef.current?.show({ message: 'Doctor login required for QR verification', type: 'warning' });
+      return;
+    }
+
     setIsScanning(true);
     Animated.loop(
       Animated.sequence([
@@ -31,37 +76,32 @@ export default function DoctorScanScreen({ navigation }: any) {
         }),
       ])
     ).start();
+
+    if (nfc.available) {
+      setIsReadingNfc(true);
+      try {
+        const token = await nfc.readToken(15000);
+        if (token) {
+          await handleVerification(token);
+          return;
+        }
+        toastRef.current?.show({ message: 'No NFC token found, switching to camera fallback', type: 'info' });
+      } catch (err) {
+        console.warn('NFC read failed:', err);
+        toastRef.current?.show({ message: 'NFC read failed, using camera fallback', type: 'warning' });
+      } finally {
+        setIsReadingNfc(false);
+      }
+    }
   };
 
   const handleScan = () => {
-    toastRef.current?.show({
-      message: 'Doctor QR code scanned! Registering on ledger...',
-      type: 'success',
-    });
-    
-    // Register doctor access permission on Hyperledger Fabric ledger
-    BlockchainService.grantAccess('doctor_smith', 60)
-      .then((txHash) => {
-        toastRef.current?.show({
-          message: 'Access GRANTED and notarized on blockchain!',
-          type: 'success',
-        });
-        setTimeout(() => {
-          setIsScanning(false);
-          navigation.goBack();
-        }, 1500);
-      })
-      .catch((err) => {
-        console.error('Blockchain access grant failed:', err);
-        toastRef.current?.show({
-          message: 'Ledger update failed. Falling back to local state.',
-          type: 'warning',
-        });
-        setTimeout(() => {
-          setIsScanning(false);
-          navigation.goBack();
-        }, 2000);
-      });
+    toastRef.current?.show({ message: 'Processing scanned token...', type: 'info' });
+  };
+
+  const onBarCodeScanned = async ({ data }: { data: string }) => {
+    setIsScanning(false);
+    await handleVerification(data);
   };
 
   return (
@@ -84,9 +124,31 @@ export default function DoctorScanScreen({ navigation }: any) {
 
       {/* ═══ SCANNER ═══ */}
       <View style={styles.scannerSection}>
-        {isScanning ? (
+        {loginNeeded ? (
+          <View style={[styles.readyContainer, styles.loginPromptContainer]}>
+            <MaterialCommunityIcons
+              name="shield-lock"
+              size={80}
+              color={Colors.primary}
+            />
+            <Text style={styles.readyTitle}>Doctor Login Required</Text>
+            <Text style={styles.readySubtitle}>
+              Authenticate as a verified doctor before scanning patient NFC/QR tokens.
+            </Text>
+            <Button
+              label="Doctor Login"
+              variant="primary"
+              onPress={() => navigation.navigate('DoctorLogin')}
+              style={styles.startButton}
+            />
+          </View>
+        ) : isScanning ? (
           <View style={styles.scannerContainer}>
             <View style={styles.scannerFrame}>
+              <BarCodeScanner
+                onBarCodeScanned={onBarCodeScanned}
+                style={{ width: 300, height: 300 }}
+              />
               <View style={[styles.corner, styles.topLeft]} />
               <View style={[styles.corner, styles.topRight]} />
               <View style={[styles.corner, styles.bottomLeft]} />
@@ -108,11 +170,11 @@ export default function DoctorScanScreen({ navigation }: any) {
                 ]}
               />
             </View>
-            <Text style={styles.scanningText}>Scanning...</Text>
+            <Text style={styles.scanningText}>{isReadingNfc ? 'Reading NFC tag…' : 'Scanning...'}</Text>
             <Button
-              label="Scan Complete"
+              label={isReadingNfc ? 'Reading NFC' : 'Cancel Scan'}
               variant="primary"
-              onPress={handleScan}
+              onPress={() => setIsScanning(false)}
               style={styles.completeButton}
             />
           </View>
@@ -125,7 +187,7 @@ export default function DoctorScanScreen({ navigation }: any) {
             />
             <Text style={styles.readyTitle}>Ready to Scan</Text>
             <Text style={styles.readySubtitle}>
-              Position the QR code within the frame
+              Position the QR code within the frame or tap to read NFC.
             </Text>
             <Button
               label="Start Scanning"

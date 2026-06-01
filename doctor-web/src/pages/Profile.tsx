@@ -1,18 +1,19 @@
 import { Mail, Phone, MapPin, Award, Shield, FileText, Activity, Camera } from 'lucide-react';
 
-function load(key: string, fallback: string) {
-  return localStorage.getItem(key) || fallback;
+function load(key: string) {
+  return localStorage.getItem(key) || '';
 }
 
 const Profile: React.FC = () => {
-  const name     = load('mc_profile_name',     'Dr. Sarah Jenkins');
-  const role     = load('mc_profile_specialty','Cardiologist');
-  const hospital = load('mc_profile_hospital', 'Connaught Hospital, Freetown');
-  const email    = load('mc_profile_email',    's.jenkins@connaught.sl');
-  const phone    = load('mc_profile_phone',    '+232 76 123 456');
-  const avatar   = localStorage.getItem('mc_profile_avatar');
-  const wallet   = localStorage.getItem('mc_wallet_address') || 'doctor_smith';
-  const license  = load('mc_profile_license',  'SL-MED-2024-9981');
+  const doctorId = localStorage.getItem('mc_doctor_id') || localStorage.getItem('mc_wallet_address') || 'Doctor';
+  const name = load('mc_profile_name') || doctorId;
+  const role = load('mc_profile_specialty') || 'Medical Doctor';
+  const hospital = load('mc_profile_hospital') || 'Ministry of Health Clinic';
+  const email = load('mc_profile_email') || 'no-reply@medichain.local';
+  const phone = load('mc_profile_phone') || '+232 000 000 000';
+  const avatar = load('mc_profile_avatar');
+  const wallet = localStorage.getItem('mc_wallet_address') || doctorId;
+  const license = load('mc_profile_license') || 'Pending verification';
 
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 

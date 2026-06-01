@@ -16,6 +16,7 @@ import MedicationsScreen from '../screens/MedicationsScreen';
 import DoctorProfileScreen from '../screens/DoctorProfileScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import LoginScreen from '../screens/LoginScreen';
+import DoctorLoginScreen from '../screens/DoctorLoginScreen';
 import SecurityScreen from '../screens/SecurityScreen';
 import ReportUploadScreen from '../screens/ReportUploadScreen';
 import DoctorScanScreen from '../screens/DoctorScanScreen';
@@ -89,7 +90,11 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="DoctorLogin" component={DoctorLoginScreen} />
+            <Stack.Screen name="DoctorScan" component={DoctorScanScreen} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
@@ -101,6 +106,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Security" component={SecurityScreen} />
             <Stack.Screen name="ReportUpload" component={ReportUploadScreen} />
             <Stack.Screen name="DoctorScan" component={DoctorScanScreen} />
+            <Stack.Screen name="DoctorLogin" component={DoctorLoginScreen} />
             <Stack.Screen name="Allergies" component={AllergiesScreen} />
             <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
             <Stack.Screen name="DataPrivacy" component={DataPrivacyScreen} />

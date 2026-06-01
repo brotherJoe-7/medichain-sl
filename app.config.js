@@ -46,7 +46,7 @@ module.exports = {
     extra: {
       // Injected at build time from environment variables
       geminiApiKey: process.env.GEMINI_API_KEY ?? '',
-      hyperledgerGatewayUrl: process.env.HYPERLEDGER_GATEWAY_URL ?? 'http://localhost:3001',
+      hyperledgerGatewayUrl: process.env.HYPERLEDGER_GATEWAY_URL ?? 'http://localhost:3000',
       apiBaseUrl: process.env.API_BASE_URL ?? 'http://localhost:3000/api',
     },
   },

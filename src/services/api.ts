@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
 
 const expoExtra = ((Constants.expoConfig?.extra ?? (Constants.manifest as any)?.extra) as any) || {};
 const configuredApiBaseUrl = expoExtra.apiBaseUrl ?? process.env.API_BASE_URL ?? 'http://localhost:3000/api';
@@ -25,7 +26,9 @@ function normalizeBaseUrl(url: string) {
 const BASE_URL = normalizeBaseUrl(configuredApiBaseUrl);
 console.log('📡 [API Service] Backend URL configured to:', BASE_URL);
 
-function buildApiUrl(path: string, params?: Record<string, string>) {
+export const API_BASE = BASE_URL;
+
+export function buildApiUrl(path: string, params?: Record<string, string>) {
   const cleanPath = path.replace(/^\/+/g, '');
   const url = `${BASE_URL}/${cleanPath}`;
   if (!params || Object.keys(params).length === 0) return url;
@@ -83,10 +86,13 @@ export async function generateQrToken(userId: string) {
 
 export async function verifyQrToken(token: string, doctorId: string) {
   try {
+    const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+    const docToken = await SecureStore.getItemAsync('medichain_doctor_token');
+    if (docToken) headers['Authorization'] = `Bearer ${docToken}`;
     const res = await fetch(buildApiUrl('qr/verify'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, doctorId }),
+      headers,
+      body: JSON.stringify({ token }),
     });
     if (!res.ok) throw new Error('QR verification failed');
     return res.json();

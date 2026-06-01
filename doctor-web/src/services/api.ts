@@ -5,8 +5,14 @@
 const BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = localStorage.getItem('mc_doctor_jwt');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  } catch {}
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   });
   if (!res.ok) {
@@ -98,7 +104,17 @@ export const verifyQr = (token: string, doctorId: string) =>
     method: 'POST',
     body: JSON.stringify({ token, doctorId }),
   });
+export interface DoctorLoginResponse {
+  token: string;
+  doctorId: string;
+  name: string;
+}
 
+export const loginDoctor = (id: string, password: string) =>
+  request<DoctorLoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ id, password }),
+  });
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 export const getAuditLog = (actorId: string) =>
   request<any[]>(`/audit/log?actorId=${encodeURIComponent(actorId)}`);

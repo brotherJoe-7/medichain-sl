@@ -11,6 +11,7 @@ import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets, ThemeOptio
 import QRCode from 'react-native-qrcode-svg';
 import { useStore } from '../store/useStore';
 import { generateQrToken } from '../services/api';
+import { useNfc } from '../hooks/useNfc';
 
 export default function SecurityScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -25,6 +26,7 @@ export default function SecurityScreen({ navigation }: any) {
     activityLog: true,
   });
   const [qrValue, setQrValue] = useState<string>('');
+  const nfc = useNfc();
 
   // Request server-signed QR token and refresh every 60s
   React.useEffect(() => {
@@ -99,6 +101,22 @@ export default function SecurityScreen({ navigation }: any) {
                   }}
                   style={{ marginTop: Spacing.md, width: '100%' }}
                 />
+                {nfc.available && (
+                  <Button
+                    label="Write to NFC"
+                    variant="primary"
+                    onPress={async () => {
+                      try {
+                        await nfc.start();
+                        await nfc.writeToken(qrValue);
+                        toastRef.current?.show({ message: 'QR token written to NFC', type: 'success' });
+                      } catch (e) {
+                        toastRef.current?.show({ message: 'NFC write failed', type: 'danger' });
+                      }
+                    }}
+                    style={{ marginTop: Spacing.sm, width: '100%' }}
+                  />
+                )}
               </View>
             </CardBody>
           </Card>

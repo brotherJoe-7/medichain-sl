@@ -6,12 +6,15 @@ import { useEffect, useState } from 'react';
 import { initDatabase, UserDB } from '../services/database';
 import { AuthService } from '../services/authService';
 import { useStore } from '../store/useStore';
+import { useWebSocket } from './useWebSocket';
 
 export function useDatabaseInit(): boolean {
   const [isReady, setIsReady] = useState(false);
   const loadFromDatabase = useStore((s) => s.loadFromDatabase);
   const setAuthenticated = useStore((s) => s.setAuthenticated);
   const setUser = useStore((s) => s.setUser);
+  // Start websocket client for real-time updates
+  useWebSocket();
 
   useEffect(() => {
     let mounted = true;

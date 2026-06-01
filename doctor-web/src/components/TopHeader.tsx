@@ -1,17 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Plus, Wallet, Check, ChevronDown, LogOut } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Bell, Plus, Wallet, Check, ChevronDown, LogOut, LogIn } from 'lucide-react';
 import { connectWallet, disconnectWallet } from '../services/blockchain';
 
 // A global event bus so other components (like Records page) can receive the "New Record" click
 export const emitNewRecord = () => window.dispatchEvent(new CustomEvent('mc:new-record'));
 
 const TopHeader: React.FC = () => {
+  const navigate = useNavigate();
   const [address, setAddress] = useState<string | null>(localStorage.getItem('mc_wallet_address'));
+  const [doctorToken, setDoctorToken] = useState<string | null>(localStorage.getItem('mc_doctor_jwt'));
+  const [doctorName, setDoctorName] = useState<string>(() => {
+    return (
+      localStorage.getItem('mc_profile_name') ||
+      localStorage.getItem('mc_doctor_id') ||
+      localStorage.getItem('mc_wallet_address') ||
+      'Doctor Login'
+    );
+  });
   const [connecting, setConnecting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = () => {
+      setAddress(localStorage.getItem('mc_wallet_address'));
+      setDoctorToken(localStorage.getItem('mc_doctor_jwt'));
+      setDoctorName(
+        localStorage.getItem('mc_profile_name') ||
+        localStorage.getItem('mc_doctor_id') ||
+        localStorage.getItem('mc_wallet_address') ||
+        'Doctor Login'
+      );
+    };
+
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -33,7 +59,6 @@ const TopHeader: React.FC = () => {
       if (result) {
         setAddress(result.address);
         localStorage.setItem('mc_wallet_address', result.address);
-        // Reload so all pages pick up new identity
         window.location.reload();
       }
     } finally {
@@ -41,9 +66,20 @@ const TopHeader: React.FC = () => {
     }
   };
 
+  const handleDoctorAction = () => {
+    if (doctorToken) {
+      navigate('/scan-qr');
+      return;
+    }
+    navigate('/login');
+  };
+
   const handleDisconnect = () => {
     disconnectWallet();
+    localStorage.removeItem('mc_doctor_jwt');
+    localStorage.removeItem('mc_doctor_id');
     setAddress(null);
+    setDoctorToken(null);
     setShowDropdown(false);
     window.location.reload();
   };
@@ -52,7 +88,9 @@ const TopHeader: React.FC = () => {
     ? (address.length > 12 ? `${address.substring(0, 8)}...` : address)
     : connecting ? 'Connecting…' : 'Connect Identity';
 
-  const doctorName = localStorage.getItem('mc_profile_name') || 'Dr. Sarah Jenkins';
+  const displayDoctorName = doctorToken
+    ? doctorName
+    : localStorage.getItem('mc_profile_name') || localStorage.getItem('mc_doctor_id') || 'Doctor Login';
 
   return (
     <header className="top-header">
@@ -66,7 +104,6 @@ const TopHeader: React.FC = () => {
       </div>
 
       <div className="header-actions">
-        {/* Wallet / Identity */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
             className={`wallet-btn ${address ? 'wallet-btn--connected' : ''}`}
@@ -78,11 +115,21 @@ const TopHeader: React.FC = () => {
             {address && <ChevronDown size={14} style={{ marginLeft: '2px', opacity: 0.7 }} />}
           </button>
 
+          <button
+            className={`wallet-btn ${doctorToken ? 'wallet-btn--connected' : ''}`}
+            onClick={handleDoctorAction}
+            style={{ marginLeft: '0.75rem' }}
+          >
+            <LogIn size={18} />
+            <span>{displayDoctorName}</span>
+            {doctorToken && <ChevronDown size={14} style={{ marginLeft: '2px', opacity: 0.7 }} />}
+          </button>
+
           {showDropdown && address && (
             <div style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               backgroundColor: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)', padding: '0.5rem', minWidth: '200px',
+              borderRadius: 'var(--radius-md)', padding: '0.5rem', minWidth: '220px',
               boxShadow: 'var(--shadow-lg)', zIndex: 100
             }}>
               <div style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid var(--border)', marginBottom: '0.5rem' }}>
@@ -114,7 +161,6 @@ const TopHeader: React.FC = () => {
           <span className="badge" />
         </button>
 
-        {/* New Record — now fires global event so Records page can open its form */}
         <button className="btn-primary" id="new-record-btn" onClick={emitNewRecord}>
           <Plus size={18} />
           <span>New Record</span>
