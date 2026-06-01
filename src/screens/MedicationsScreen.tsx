@@ -23,7 +23,7 @@ export default function MedicationsScreen({ navigation }: any) {
   };
 
   const handleAddMed = () => {
-    toastRef.current?.show({ message: 'Scan prescription or connect to pharmacy API', type: 'info' });
+    navigation.navigate('AddMedication');
   };
 
   const pendingCount = medications.filter(m => m.status === 'pending').length;
@@ -34,7 +34,7 @@ export default function MedicationsScreen({ navigation }: any) {
       <StatusBar style="dark" />
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#1E293B" />
+          <Ionicons name="chevron-back" size={24} color={Colors.neutral900} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Medicines</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAddMed}>
@@ -61,20 +61,20 @@ export default function MedicationsScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>Active Medications</Text>
         {medications.length === 0 ? (
           <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="pill-off" size={48} color="#CBD5E1" />
+            <MaterialCommunityIcons name="pill-off" size={48} color={Colors.neutral300} />
             <Text style={styles.emptyStateText}>No active medications found.</Text>
           </View>
         ) : (
           medications.map((med) => (
             <View key={med.id} style={styles.medCard}>
               <View style={[styles.iconBox, {
-                backgroundColor: med.status === 'taken' ? '#ECFDF5' :
-                  med.status === 'skipped' ? '#FEF2F2' : '#E0F2FE'
+                backgroundColor: med.status === 'taken' ? Colors.successLight :
+                  med.status === 'skipped' ? Colors.dangerLight : Colors.primaryLight
               }]}>
                 <MaterialCommunityIcons
                   name="pill"
                   size={28}
-                  color={med.status === 'taken' ? '#10B981' : med.status === 'skipped' ? '#EF4444' : '#0284C7'}
+                  color={med.status === 'taken' ? Colors.success : med.status === 'skipped' ? Colors.danger : Colors.primary}
                 />
               </View>
               <View style={styles.medInfo}>
@@ -84,12 +84,12 @@ export default function MedicationsScreen({ navigation }: any) {
                 <Text style={styles.medTime}>🕐 {med.time}</Text>
                 <View style={styles.tagRow}>
                   <View style={[styles.tag, {
-                    backgroundColor: med.status === 'taken' ? '#ECFDF5' :
-                      med.status === 'skipped' ? '#FEF2F2' : '#E0F2FE'
+                    backgroundColor: med.status === 'taken' ? Colors.successLight :
+                      med.status === 'skipped' ? Colors.dangerLight : Colors.primaryLight
                   }]}>
                     <Text style={[styles.tagText, {
-                      color: med.status === 'taken' ? '#10B981' :
-                        med.status === 'skipped' ? '#EF4444' : '#0284C7'
+                      color: med.status === 'taken' ? Colors.success :
+                        med.status === 'skipped' ? Colors.danger : Colors.primary
                     }]}>
                       {med.status === 'taken' ? '✓ Taken' : med.status === 'skipped' ? '✕ Skipped' : '⏳ Pending'}
                     </Text>
@@ -108,7 +108,7 @@ export default function MedicationsScreen({ navigation }: any) {
                     style={styles.skipBtn}
                     onPress={() => handleMarkSkipped(med.id, med.name)}
                   >
-                    <Ionicons name="close" size={18} color="#EF4444" />
+                    <Ionicons name="close" size={18} color={Colors.danger} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -117,7 +117,7 @@ export default function MedicationsScreen({ navigation }: any) {
         )}
 
         <TouchableOpacity style={styles.refillCard}>
-          <Ionicons name="refresh" size={24} color="#2563EB" />
+          <Ionicons name="refresh" size={24} color={Colors.primary} />
           <Text style={styles.refillText}>Request Refill</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   summaryInfo: { flex: 1 },
   summaryText: { color: Colors.neutral500, fontSize: FontSize.body, marginBottom: Spacing.xs },
-  timeText: { color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, marginBottom: Spacing.sm },
+  timeText: { color: Colors.white, fontSize: FontSize.h1, fontWeight: FontWeight.bold, marginBottom: Spacing.sm },
   medName: { color: Colors.primary, fontSize: FontSize.body, fontWeight: FontWeight.medium },
   remindBtn: {
     width: 44,

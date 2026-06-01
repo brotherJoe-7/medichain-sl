@@ -7,16 +7,16 @@ import {
   TouchableOpacity, 
   Image, 
   Animated,
-  Dimensions
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Button, Card, CardBody, Badge, Toast } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import TabBarSpacer from '../components/TabBarSpacer';
+
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets } from '../theme';
 import { useStore } from '../store/useStore';
 
-const { width } = Dimensions.get('window');
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -39,17 +39,26 @@ export default function HomeScreen({ navigation }: any) {
     user, 
     medications, 
     appointments, 
+    records,
+    allergies,
     tokens, 
+    healthMetrics,
     isDataSharingEnabled, 
     setSharingEnabled, 
     accessRequests, 
     approveAccessRequest, 
-    denyAccessRequest 
+    denyAccessRequest,
+    themeChoice,
   } = useStore();
+  const theme = ThemePresets[themeChoice];
 
   const upcomingAppointment = appointments.find(a => a.status === 'upcoming');
   const activeMeds = medications.filter(m => m.status === 'pending').length;
   const pendingRequests = accessRequests?.filter(r => r.status === 'pending') || [];
+
+  // Latest health metrics — pull the most recent reading of each type
+  const latestHeartRate = healthMetrics.filter(m => m.type === 'Heart Rate').slice(-1)[0];
+  const latestGlucose = healthMetrics.filter(m => m.type === 'Glucose').slice(-1)[0];
 
   const handleScroll = (event: any) => {
     const scrollY = event.nativeEvent.contentOffset.y;
@@ -71,7 +80,7 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar style="light" />
       
       <ScrollView
@@ -81,7 +90,7 @@ export default function HomeScreen({ navigation }: any) {
         onScroll={handleScroll}
       >
         {/* ═══ PREMIUM HEADER SECTION ═══ */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.md, backgroundColor: theme.primary }]}>
           <View style={styles.headerContent}>
             
             <View style={styles.greetingSection}>
@@ -99,7 +108,7 @@ export default function HomeScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('Security')}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.iconBg}>
+                  <View style={[styles.iconBg, { backgroundColor: theme.primaryLight }]}> 
                     <Ionicons name="shield-checkmark" size={20} color={Colors.white} />
                   </View>
                 </TouchableOpacity>
@@ -109,7 +118,7 @@ export default function HomeScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('Notifications')}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.iconBg, pendingRequests.length > 0 && styles.iconBgAlert]}>
+                  <View style={[styles.iconBg, pendingRequests.length > 0 ? { backgroundColor: theme.accent } : null]}> 
                     <Ionicons name="notifications" size={20} color={Colors.white} />
                   </View>
                   {pendingRequests.length > 0 && (
@@ -123,31 +132,35 @@ export default function HomeScreen({ navigation }: any) {
 
             {/* Health Status Bar */}
             <View style={styles.statusBarContainer}>
-              <View style={styles.statusItem}>
+                <View style={styles.statusItem}>
                 <MaterialCommunityIcons name="heart-pulse" size={20} color={Colors.white} style={styles.statusIcon} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.statusLabel}>Heart Rate</Text>
-                  <Text style={styles.statusValue}>72 bpm</Text>
+                  <Text style={styles.statusValue}>
+                    {latestHeartRate ? `${latestHeartRate.value} ${latestHeartRate.unit}` : '— bpm'}
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.statusDivider} />
 
               <View style={styles.statusItem}>
-                <MaterialCommunityIcons name="walk" size={20} color={Colors.white} style={styles.statusIcon} />
+                <MaterialCommunityIcons name="diabetes" size={20} color={Colors.white} style={styles.statusIcon} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.statusLabel}>Steps</Text>
-                  <Text style={styles.statusValue}>4.2k</Text>
+                  <Text style={styles.statusLabel}>Glucose</Text>
+                  <Text style={styles.statusValue}>
+                    {latestGlucose ? `${latestGlucose.value} ${latestGlucose.unit}` : '— mg/dL'}
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.statusDivider} />
 
               <View style={styles.statusItem}>
-                <MaterialCommunityIcons name="water" size={20} color={Colors.white} style={styles.statusIcon} />
+                <MaterialCommunityIcons name="pill" size={20} color={Colors.white} style={styles.statusIcon} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.statusLabel}>Hydration</Text>
-                  <Text style={styles.statusValue}>1.2L</Text>
+                  <Text style={styles.statusLabel}>Medications</Text>
+                  <Text style={styles.statusValue}>{activeMeds > 0 ? `${activeMeds} Due` : 'All Done'}</Text>
                 </View>
               </View>
             </View>
@@ -183,15 +196,15 @@ export default function HomeScreen({ navigation }: any) {
 
                 <View style={styles.apptDetailsSection}>
                   <View style={styles.apptDetailRow}>
-                    <Ionicons name="calendar-clear-outline" size={18} color="#64748B" />
+                    <Ionicons name="calendar-clear-outline" size={18} color={Colors.neutral600} />
                     <Text style={styles.apptDetailValue}>
                       {upcomingAppointment.date} at {upcomingAppointment.time}
                     </Text>
                   </View>
 
                   <View style={styles.apptDetailRow}>
-                    <Ionicons name="location-outline" size={18} color="#64748B" />
-                    <Text style={styles.apptDetailValue}>City Hospital, Floor 3</Text>
+                    <Ionicons name="location-outline" size={18} color={Colors.neutral600} />
+                    <Text style={styles.apptDetailValue}>{(upcomingAppointment as any).location || 'See appointment details'}</Text>
                   </View>
                 </View>
 
@@ -210,34 +223,32 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Access</Text>
           <View style={styles.actionGrid}>
-            
             <TouchableOpacity style={styles.flatActionCard} onPress={() => navigation.navigate('ExploreDoctors')} activeOpacity={0.7}>
-              <View style={[styles.cleanActionIconBg, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-                <FontAwesome5 name="user-md" size={22} color="#3B82F6" />
+              <View style={[styles.cleanActionIconBg, { backgroundColor: theme.primaryLight }]}> 
+                <FontAwesome5 name="user-md" size={18} color={theme.primary} />
               </View>
               <Text style={styles.cleanActionLabel}>Find Doctor</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatActionCard} onPress={() => navigation.navigate('ReportUpload')} activeOpacity={0.7}>
-              <View style={[styles.cleanActionIconBg, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-                <Ionicons name="document-text" size={22} color="#3B82F6" />
+              <View style={[styles.cleanActionIconBg, { backgroundColor: theme.primaryLight }]}> 
+                <Ionicons name="document-text" size={18} color={theme.primary} />
               </View>
               <Text style={styles.cleanActionLabel}>Add Report</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatActionCard} onPress={() => navigation.navigate('Security')} activeOpacity={0.7}>
-              <View style={[styles.cleanActionIconBg, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-                <Ionicons name="qr-code" size={22} color="#3B82F6" />
+              <View style={[styles.cleanActionIconBg, { backgroundColor: theme.primaryLight }]}> 
+                <Ionicons name="qr-code" size={18} color={theme.primary} />
               </View>
               <Text style={styles.cleanActionLabel}>Share ID</Text>
             </TouchableOpacity>
-
           </View>
         </View>
 
         {/* ═══ MEDI-WALLET (Moved Down) ═══ */}
         <View style={styles.section}>
-          <Card style={styles.flatCardDark}>
+          <Card style={[styles.flatCardDark, { backgroundColor: theme.primary }]}> 
             <CardBody>
               <View style={styles.walletInner}>
                 <View>
@@ -259,10 +270,10 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ YOUR HEALTH GRID ═══ */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Health</Text>
-          <View style={styles.gridContainer}>
+              <View style={styles.gridContainer}>
             
             <TouchableOpacity style={styles.flatGridItem} onPress={() => navigation.navigate('Medications')} activeOpacity={0.7}>
-              <MaterialCommunityIcons name="pill" size={26} color="#475569" style={styles.gridIcon} />
+              <MaterialCommunityIcons name="pill" size={26} color={Colors.neutral600} style={styles.gridIcon} />
               <View>
                 <Text style={styles.gridItemTitle}>Medications</Text>
                 {activeMeds > 0 && <Text style={styles.gridItemSubtext}>{activeMeds} Active</Text>}
@@ -270,23 +281,23 @@ export default function HomeScreen({ navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatGridItem} onPress={() => navigation.navigate('Allergies')} activeOpacity={0.7}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={26} color="#475569" style={styles.gridIcon} />
+              <MaterialCommunityIcons name="alert-circle-outline" size={26} color={Colors.neutral600} style={styles.gridIcon} />
               <View>
                 <Text style={styles.gridItemTitle}>Allergies</Text>
-                <Text style={styles.gridItemSubtext}>2 Recorded</Text>
+                <Text style={styles.gridItemSubtext}>{allergies.length} Recorded</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatGridItem} onPress={() => navigation.navigate('Records')} activeOpacity={0.7}>
-              <Ionicons name="folder-outline" size={26} color="#475569" style={styles.gridIcon} />
+              <MaterialCommunityIcons name="folder-outline" size={26} color={Colors.neutral600} style={styles.gridIcon} />
               <View>
                 <Text style={styles.gridItemTitle}>Medical Records</Text>
-                <Text style={styles.gridItemSubtext}>12 Files</Text>
+                <Text style={styles.gridItemSubtext}>{records.length} {records.length === 1 ? 'File' : 'Files'}</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.flatGridItem} onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-              <Ionicons name="settings-outline" size={26} color="#475569" style={styles.gridIcon} />
+              <Ionicons name="settings-outline" size={26} color={Colors.neutral600} style={styles.gridIcon} />
               <View>
                 <Text style={styles.gridItemTitle}>Settings</Text>
                 <Text style={styles.gridItemSubtext}>Preferences</Text>
@@ -301,8 +312,8 @@ export default function HomeScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <View style={styles.sharingHeader}>
-                <View style={[styles.sharingIconBox, { backgroundColor: isDataSharingEnabled ? 'rgba(34, 197, 94, 0.1)' : '#F1F5F9' }]}>
-                  <Ionicons name="shield-checkmark" size={20} color={isDataSharingEnabled ? Colors.success : '#94A3B8'} />
+                <View style={[styles.sharingIconBox, { backgroundColor: isDataSharingEnabled ? theme.successLight : Colors.neutral100 }]}>
+                  <Ionicons name="shield-checkmark" size={20} color={isDataSharingEnabled ? theme.success : Colors.neutral500} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sharingTitle}>Secure Data Sharing</Text>
@@ -320,7 +331,8 @@ export default function HomeScreen({ navigation }: any) {
           </Card>
         </View>
 
-        <View style={{ height: Spacing.xxxl }} />
+        <View style={{ height: 4 }} />
+        <TabBarSpacer />
       </ScrollView>
 
       <Toast ref={toastRef} />
@@ -331,10 +343,10 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', 
+    backgroundColor: Colors.neutral50,
   },
   scrollContent: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: 0,
   },
 
   // ═══ HEADER SECTION ═══
@@ -382,13 +394,13 @@ const styles = StyleSheet.create({
   iconBg: {
     width: 40,
     height: 40,
-    borderRadius: Radius.lg, // Changed to match standard radii
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.white + '26',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconBgAlert: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: Colors.danger + '33',
   },
   notificationDot: {
     position: 'absolute',
@@ -397,7 +409,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.danger,
     borderWidth: 2,
     borderColor: Colors.primary,
     justifyContent: 'center',
@@ -412,15 +424,17 @@ const styles = StyleSheet.create({
   // ═══ STATUS BAR ═══
   statusBarContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: Radius.lg, // Consistent radius
+    flexWrap: 'wrap',
+    backgroundColor: Colors.white + '1A',
+    borderRadius: Radius.lg,
     padding: Spacing.md,
   },
   statusItem: {
     flex: 1,
+    minWidth: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   statusIcon: {
     opacity: 0.9,
@@ -455,7 +469,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSize.h3,
     fontWeight: FontWeight.bold,
-    color: '#0F172A', 
+    color: Colors.neutral900,
   },
 
   // ═══ UNIVERSAL FLAT CARDS (No Shadows, Strict Radii) ═══
@@ -463,13 +477,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.neutral200,
   },
   flatCardDark: {
-    backgroundColor: '#0F172A', 
+    backgroundColor: Colors.dark,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: Colors.neutral700,
   },
 
   // ═══ WALLET CARD CONTENT ═══
@@ -481,7 +495,7 @@ const styles = StyleSheet.create({
   },
   walletLabel: {
     fontSize: FontSize.body,
-    color: '#94A3B8',
+    color: Colors.neutral500,
     marginBottom: Spacing.xs,
   },
   walletRow: {
@@ -498,18 +512,18 @@ const styles = StyleSheet.create({
   walletCurrency: {
     fontSize: FontSize.h4,
     fontWeight: FontWeight.bold,
-    color: '#CBD5E1',
+    color: Colors.neutral300,
   },
   walletSubtext: {
     fontSize: FontSize.bodySmall,
-    color: '#64748B',
+    color: Colors.neutral600,
     marginTop: Spacing.xs,
   },
   walletIcon: {
     width: 56,
     height: 56,
-    borderRadius: Radius.lg, // Consistent radius
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.white + '1A',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -517,31 +531,33 @@ const styles = StyleSheet.create({
   // ═══ QUICK ACTIONS CONTENT ═══
   actionGrid: {
     flexDirection: 'row',
-    gap: Spacing.md,
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   flatActionCard: {
-    flex: 1,
+    flexBasis: '32%',
+    maxWidth: '32%',
+    minWidth: 96,
     backgroundColor: Colors.white,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.lg, // Consistent radius
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.neutral200,
     alignItems: 'center',
   },
   cleanActionIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.lg, // Consistent radius
+    width: 40,
+    height: 40,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   cleanActionLabel: {
-    fontSize: FontSize.bodySmall,
+    fontSize: FontSize.caption,
     fontWeight: FontWeight.bold,
-    color: '#334155',
+    color: Colors.neutral700,
     textAlign: 'center',
   },
 
@@ -574,11 +590,11 @@ const styles = StyleSheet.create({
   apptDocName: {
     fontSize: FontSize.h4,
     fontWeight: FontWeight.bold,
-    color: '#0F172A',
+    color: Colors.neutral900,
   },
   apptDocSpec: {
     fontSize: FontSize.bodySmall,
-    color: '#64748B',
+    color: Colors.neutral600,
     marginTop: 2,
   },
   apptConfirmed: {
@@ -591,8 +607,8 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     width: 40,
     height: 40,
-    borderRadius: Radius.lg, // Consistent radius
-    backgroundColor: '#F1F5F9',
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.neutral100,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -600,7 +616,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: Colors.neutral100,
   },
   apptDetailRow: {
     flexDirection: 'row',
@@ -610,7 +626,7 @@ const styles = StyleSheet.create({
   apptDetailValue: {
     fontSize: FontSize.body,
     fontWeight: FontWeight.medium,
-    color: '#334155',
+    color: Colors.neutral700,
   },
   apptBtn: {
     marginTop: Spacing.lg,
@@ -632,18 +648,18 @@ const styles = StyleSheet.create({
   sharingTitle: {
     fontSize: FontSize.body,
     fontWeight: FontWeight.bold,
-    color: '#0F172A',
+    color: Colors.neutral900,
   },
   sharingDesc: {
     fontSize: FontSize.bodySmall,
-    color: '#64748B',
+    color: Colors.neutral600,
     marginTop: 2,
   },
   toggleSwitch: {
     width: 48,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: Colors.neutral200,
     justifyContent: 'center',
     paddingHorizontal: 2,
   },
@@ -662,16 +678,23 @@ const styles = StyleSheet.create({
 
   // ═══ HEALTH GRID CONTENT ═══
   gridContainer: {
-    gap: Spacing.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: -Spacing.sm,
   },
   flatGridItem: {
+    flexBasis: '48%',
+    minWidth: 140,
+    marginHorizontal: Spacing.sm,
+    marginBottom: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
     padding: Spacing.md,
-    borderRadius: Radius.lg, // Consistent radius
+    borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.neutral200,
   },
   gridIcon: {
     marginRight: Spacing.md,
@@ -679,11 +702,11 @@ const styles = StyleSheet.create({
   gridItemTitle: {
     fontSize: FontSize.body,
     fontWeight: FontWeight.bold,
-    color: '#334155',
+    color: Colors.neutral700,
   },
   gridItemSubtext: {
     fontSize: FontSize.bodySmall,
-    color: '#64748B',
+    color: Colors.neutral600,
     marginTop: 2,
   },
 });

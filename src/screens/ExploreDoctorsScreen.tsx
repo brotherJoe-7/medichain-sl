@@ -1,69 +1,26 @@
 import React, { useState, useRef } from 'react';
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity,
-  TextInput, Image, FlatList,
+  TextInput, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Card, CardBody, Badge, Button, Toast } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
-
-const DOCTORS = [
-  {
-    id: '1',
-    name: 'Dr. Sarah Wilson',
-    specialty: 'Cardiologist',
-    rating: 4.8,
-    reviews: 245,
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-    experience: '12 years',
-    availability: 'Available Today',
-    price: '$50',
-  },
-  {
-    id: '2',
-    name: 'Dr. Michael Chen',
-    specialty: 'Dermatologist',
-    rating: 4.6,
-    reviews: 189,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-    experience: '8 years',
-    availability: 'Available Tomorrow',
-    price: '$45',
-  },
-  {
-    id: '3',
-    name: 'Dr. Emily Rodriguez',
-    specialty: 'Neurologist',
-    rating: 4.9,
-    reviews: 312,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-    experience: '15 years',
-    availability: 'Available in 2 days',
-    price: '$60',
-  },
-  {
-    id: '4',
-    name: 'Dr. James Anderson',
-    specialty: 'Orthopedic',
-    rating: 4.7,
-    reviews: 267,
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c006b310?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-    experience: '10 years',
-    availability: 'Available Today',
-    price: '$55',
-  },
-];
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets } from '../theme';
+import { useStore } from '../store/useStore';
+import { formatLeone } from '../utils/currency';
 
 const SPECIALTIES = ['All', 'Cardiology', 'Dermatology', 'Neurology', 'Orthopedic'];
 
 export default function ExploreDoctorsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const toastRef = useRef<any>(null);
+  const { themeChoice } = useStore();
+  const theme = ThemePresets[themeChoice];
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
-  const [doctors, setDoctors] = useState(DOCTORS);
+  const doctors: any[] = [];
 
   const filteredDoctors = doctors.filter(doctor => {
     const matchesSearch =
@@ -82,7 +39,7 @@ export default function ExploreDoctorsScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar style="light" />
 
       <ScrollView
@@ -90,7 +47,7 @@ export default function ExploreDoctorsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* ═══ HEADER ═══ */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.md, backgroundColor: theme.primary }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -104,17 +61,17 @@ export default function ExploreDoctorsScreen({ navigation }: any) {
         {/* ═══ SEARCH BAR ═══ */}
         <View style={styles.searchSection}>
           <View style={styles.searchInputContainer}>
-            <MaterialCommunityIcons name="magnify" size={20} color={Colors.neutral500} />
+            <MaterialCommunityIcons name="magnify" size={20} color={theme.textMuted} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search doctors, specialties..."
-              placeholderTextColor={Colors.neutral500}
+              placeholderTextColor={theme.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color={Colors.neutral400} />
+                <Ionicons name="close-circle" size={20} color={theme.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -182,12 +139,12 @@ export default function ExploreDoctorsScreen({ navigation }: any) {
                         <Text style={styles.doctorName}>{doctor.name}</Text>
                         <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
                         <View style={styles.ratingRow}>
-                          <MaterialCommunityIcons name="star" size={16} color="#FFA500" />
+                          <MaterialCommunityIcons name="star" size={16} color={Colors.warning} />
                           <Text style={styles.rating}>{doctor.rating}</Text>
                           <Text style={styles.reviews}>({doctor.reviews} reviews)</Text>
                         </View>
                       </View>
-                      <Text style={styles.price}>{doctor.price}</Text>
+                      <Text style={[styles.price, { color: theme.primaryDark }]}>{formatLeone(doctor.price)}</Text>
                     </View>
 
                     {/* Details */}

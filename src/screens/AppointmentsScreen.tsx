@@ -7,52 +7,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Button, Card, CardBody, Badge, Toast } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import TabBarSpacer from '../components/TabBarSpacer';
+import { useStore } from '../store/useStore';
 
-const APPOINTMENTS = [
-  {
-    id: '1',
-    doctorName: 'Dr. Sarah Wilson',
-    specialty: 'Cardiologist',
-    date: 'Apr 30, 2026',
-    time: '10:30 AM',
-    type: 'Hospital Visit',
-    status: 'Confirmed',
-    location: 'City Hospital',
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80',
-  },
-  {
-    id: '2',
-    doctorName: 'Dr. Michael Chen',
-    specialty: 'Dermatologist',
-    date: 'May 2, 2026',
-    time: '2:00 PM',
-    type: 'Video Consult',
-    status: 'Pending',
-    location: 'Online',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80',
-  },
-  {
-    id: '3',
-    doctorName: 'Dr. Emily Rodriguez',
-    specialty: 'Neurologist',
-    date: 'May 5, 2026',
-    time: '3:30 PM',
-    type: 'Follow-up',
-    status: 'Confirmed',
-    location: 'Wellness Center',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80',
-  },
-];
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets } from '../theme';
 
 export default function AppointmentsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const toastRef = useRef<any>(null);
-  const [appointments, setAppointments] = useState(APPOINTMENTS);
+  const { appointments, updateAppointmentStatus, themeChoice } = useStore();
+  const theme = ThemePresets[themeChoice];
   const [activeTab, setActiveTab] = useState<'Upcoming' | 'Past'>('Upcoming');
 
-  const upcomingAppointments = appointments.filter(a => a.status !== 'Completed' && a.status !== 'Cancelled');
-  const pastAppointments = appointments.filter(a => a.status === 'Completed' || a.status === 'Cancelled');
+  const upcomingAppointments = appointments.filter(a => a.status !== 'completed' && a.status !== 'cancelled');
+  const pastAppointments = appointments.filter(a => a.status === 'completed' || a.status === 'cancelled');
   const displayedAppointments = activeTab === 'Upcoming' ? upcomingAppointments : pastAppointments;
 
   const handleReschedule = (id: string) => {
@@ -62,10 +30,8 @@ export default function AppointmentsScreen({ navigation }: any) {
     });
   };
 
-  const handleCancel = (id: string) => {
-    setAppointments(appointments.map(appt =>
-      appt.id === id ? { ...appt, status: 'Cancelled' } : appt
-    ));
+  const handleCancel = async (id: string) => {
+    await updateAppointmentStatus(id, 'cancelled');
     toastRef.current?.show({
       message: 'Appointment cancelled',
       type: 'info',
@@ -73,7 +39,7 @@ export default function AppointmentsScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar style="light" />
 
       <ScrollView
@@ -81,7 +47,7 @@ export default function AppointmentsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* ═══ HEADER ═══ */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.md, backgroundColor: theme.primary }]}>
           <Text style={styles.headerTitle}>My Appointments</Text>
           <TouchableOpacity
             style={styles.actionButton}
@@ -92,31 +58,31 @@ export default function AppointmentsScreen({ navigation }: any) {
         </View>
 
         {/* ═══ TABS ═══ */}
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { backgroundColor: theme.surface }]}> 
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'Upcoming' && styles.activeTab]}
+            style={[styles.tab, activeTab === 'Upcoming' && { borderColor: theme.primary }]}
             onPress={() => setActiveTab('Upcoming')}
           >
             <Text
               style={[
                 styles.tabText,
-                activeTab === 'Upcoming' && styles.activeTabText,
+                activeTab === 'Upcoming' && { color: theme.primary },
               ]}
             >
               Upcoming
             </Text>
-            {activeTab === 'Upcoming' && <View style={styles.tabIndicator} />}
+            {activeTab === 'Upcoming' && <View style={[styles.tabIndicator, { backgroundColor: theme.primary }]} />}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'Past' && styles.activeTab]}
+            style={[styles.tab, activeTab === 'Past' && { borderColor: theme.primary }]}
             onPress={() => setActiveTab('Past')}
           >
             <Text
-              style={[styles.tabText, activeTab === 'Past' && styles.activeTabText]}
+              style={[styles.tabText, activeTab === 'Past' && { color: theme.primary }]}
             >
               Past
             </Text>
-            {activeTab === 'Past' && <View style={styles.tabIndicator} />}
+            {activeTab === 'Past' && <View style={[styles.tabIndicator, { backgroundColor: theme.primary }]} />}
           </TouchableOpacity>
         </View>
 
@@ -146,18 +112,14 @@ export default function AppointmentsScreen({ navigation }: any) {
             displayedAppointments.map((appointment) => (
               <Card key={appointment.id} style={styles.flatCard}>
                 <CardBody>
-                  {/* Doctor Info */}
+                  {/* Appointment summary */}
                   <View style={styles.appointmentHeader}>
-                    <Image
-                      source={{ uri: appointment.avatar }}
-                      style={styles.doctorAvatar}
-                    />
-                    <View style={{ flex: 1 }}>
+                    <View style={styles.statusBadge}>
+                      <Text style={styles.statusBadgeText}>{appointment.status.toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: Spacing.md }}>
                       <Text style={styles.doctorName}>{appointment.doctorName}</Text>
                       <Text style={styles.doctorSpec}>{appointment.specialty}</Text>
-                      <Badge variant={appointment.status === 'Confirmed' ? 'primary' : 'warning'}>
-                        {appointment.status}
-                      </Badge>
                     </View>
                     <TouchableOpacity
                       style={styles.phoneButton}
@@ -188,22 +150,6 @@ export default function AppointmentsScreen({ navigation }: any) {
                         {appointment.date} at {appointment.time}
                       </Text>
                     </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons
-                        name="location-outline"
-                        size={18}
-                        color={Colors.neutral600}
-                      />
-                      <Text style={styles.detailText}>{appointment.location}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons
-                        name="information-circle-outline"
-                        size={18}
-                        color={Colors.neutral600}
-                      />
-                      <Text style={styles.detailText}>{appointment.type}</Text>
-                    </View>
                   </View>
 
                   {/* Actions */}
@@ -231,7 +177,7 @@ export default function AppointmentsScreen({ navigation }: any) {
           )}
         </View>
 
-        <View style={{ height: Spacing.xxxl }} />
+        <TabBarSpacer />
       </ScrollView>
 
       <Toast ref={toastRef} />
@@ -245,7 +191,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral50,
   },
   scrollContent: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: 0,
   },
 
   // ═══ HEADER ═══
@@ -346,6 +292,18 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: Radius.lg,
+  },
+  statusBadge: {
+    backgroundColor: Colors.neutral100,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.md,
+  },
+  statusBadgeText: {
+    fontSize: FontSize.label,
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral700,
+    textTransform: 'uppercase',
   },
   doctorName: {
     fontSize: FontSize.h4,

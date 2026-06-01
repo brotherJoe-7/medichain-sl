@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "medichain-app",
+    "name": "MediChain SL",
     "slug": "medichain-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-icon-clean.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

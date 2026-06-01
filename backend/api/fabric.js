@@ -86,7 +86,7 @@ class FabricGateway {
 
       console.log(`📡 [Fabric Ledger] Evaluating Query: ${contractName}.${fnName} with args:`, args);
       const result = await contract.evaluateTransaction(fnName, ...args);
-      return JSON.parse(result.toString());
+      return result;
     } catch (error) {
       console.error(`❌ [Fabric Ledger Error] Query ${fnName} failed:`, error);
       throw error;

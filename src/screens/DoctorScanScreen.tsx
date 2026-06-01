@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 2,
     borderColor: Colors.primary,
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    backgroundColor: Colors.primaryLight,
     position: 'relative',
     overflow: 'hidden',
     marginBottom: Spacing.xl,

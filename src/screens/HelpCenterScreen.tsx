@@ -206,7 +206,7 @@ export default function HelpCenterScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <TouchableOpacity style={styles.quickLinkItem}>
-                <View style={[styles.quickLinkIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                <View style={[styles.quickLinkIcon, { backgroundColor: Colors.primaryLight }]}> 
                   <MaterialCommunityIcons name="message-question" size={24} color={Colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -221,7 +221,7 @@ export default function HelpCenterScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <TouchableOpacity style={styles.quickLinkItem}>
-                <View style={[styles.quickLinkIcon, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
+                <View style={[styles.quickLinkIcon, { backgroundColor: Colors.successLight }]}> 
                   <MaterialCommunityIcons name="file-document" size={24} color={Colors.success} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -236,8 +236,8 @@ export default function HelpCenterScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <TouchableOpacity style={styles.quickLinkItem}>
-                <View style={[styles.quickLinkIcon, { backgroundColor: 'rgba(251, 146, 60, 0.1)' }]}>
-                  <MaterialCommunityIcons name="shield-account" size={24} color="#FB923C" />
+                <View style={[styles.quickLinkIcon, { backgroundColor: Colors.warningLight }]}> 
+                  <MaterialCommunityIcons name="shield-account" size={24} color={Colors.warning} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.quickLinkTitle}>Terms of Service</Text>

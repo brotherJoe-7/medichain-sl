@@ -9,11 +9,11 @@ module.exports = {
     slug: 'medichain-app',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/icon1.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
-      image: './assets/splash-icon.png',
+      image: './assets/splash-icon-clean.png',
       resizeMode: 'contain',
       backgroundColor: '#000728',
     },
@@ -47,7 +47,7 @@ module.exports = {
       // Injected at build time from environment variables
       geminiApiKey: process.env.GEMINI_API_KEY ?? '',
       hyperledgerGatewayUrl: process.env.HYPERLEDGER_GATEWAY_URL ?? 'http://localhost:3001',
-      apiBaseUrl: process.env.API_BASE_URL ?? 'http://localhost:4000/api/v1',
+      apiBaseUrl: process.env.API_BASE_URL ?? 'http://localhost:3000/api',
     },
   },
 };

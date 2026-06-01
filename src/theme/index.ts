@@ -232,6 +232,139 @@ export const BadgePresets = {
   },
 };
 
+export type ThemeKey = 'classic' | 'pediatric' | 'wellness' | 'senior';
+
+export interface ThemePalette {
+  primary: string;
+  primaryDark: string;
+  primaryLight: string;
+  accent: string;
+  success: string;
+  successLight: string;
+  danger: string;
+  dangerLight: string;
+  warning: string;
+  warningLight: string;
+  lavender: string;
+  lavendarDark: string;
+  background: string;
+  surface: string;
+  cardBackground: string;
+  textBody: string;
+  textMuted: string;
+  border: string;
+}
+
+export const ThemePresets: Record<ThemeKey, ThemePalette> = {
+  classic: {
+    primary: Colors.primary,
+    primaryDark: Colors.primaryDark,
+    primaryLight: Colors.primaryLight,
+    accent: Colors.accent,
+    success: Colors.success,
+    successLight: Colors.successLight,
+    danger: Colors.danger,
+    dangerLight: Colors.dangerLight,
+    warning: Colors.warning,
+    warningLight: Colors.warningLight,
+    lavender: Colors.lavender,
+    lavendarDark: Colors.lavendarDark,
+    background: Colors.bg,
+    surface: Colors.white,
+    cardBackground: Colors.white,
+    textBody: Colors.textBody,
+    textMuted: Colors.textMuted,
+    border: Colors.border,
+  },
+  pediatric: {
+    primary: '#10B981',
+    primaryDark: '#047857',
+    primaryLight: '#D1FAE5',
+    accent: '#8B5CF6',
+    success: '#0F766E',
+    successLight: '#D1FAE5',
+    danger: '#EF4444',
+    dangerLight: '#FEE2E2',
+    warning: '#F59E0B',
+    warningLight: '#FEF3C7',
+    lavender: '#E0F2FE',
+    lavendarDark: '#0E7490',
+    background: '#F8FDFA',
+    surface: '#FFFFFF',
+    cardBackground: '#FFFFFF',
+    textBody: '#1F2937',
+    textMuted: '#4B5563',
+    border: '#D1D5DB',
+  },
+  wellness: {
+    primary: '#EC4899',
+    primaryDark: '#BE185D',
+    primaryLight: '#FCE7F3',
+    accent: '#FBBF24',
+    success: '#16A34A',
+    successLight: '#DCFCE7',
+    danger: '#DC2626',
+    dangerLight: '#FEE2E2',
+    warning: '#F59E0B',
+    warningLight: '#FEF3C7',
+    lavender: '#FCE7F3',
+    lavendarDark: '#9D174D',
+    background: '#FFF5F7',
+    surface: '#FFFFFF',
+    cardBackground: '#FFFFFF',
+    textBody: '#1F2937',
+    textMuted: '#6B7280',
+    border: '#EDE9FE',
+  },
+  senior: {
+    primary: '#0EA5E9',
+    primaryDark: '#0369A1',
+    primaryLight: '#DBEAFE',
+    accent: '#14B8A6',
+    success: '#15803D',
+    successLight: '#DCFCE7',
+    danger: '#DC2626',
+    dangerLight: '#FEE2E2',
+    warning: '#F59E0B',
+    warningLight: '#FEF3C7',
+    lavender: '#E0F2FE',
+    lavendarDark: '#0C4A6E',
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    cardBackground: '#FFFFFF',
+    textBody: '#0F172A',
+    textMuted: '#475569',
+    border: '#CBD5E1',
+  },
+};
+
+export const ThemeOptions = [
+  {
+    id: 'classic' as const,
+    title: 'Classic Blue',
+    description: 'Balanced medical palette for all users.',
+    recommendation: 'Best for general use',
+  },
+  {
+    id: 'pediatric' as const,
+    title: 'Pediatric Care',
+    description: 'Soft greens and blues suited for younger patients.',
+    recommendation: 'Recommended for children',
+  },
+  {
+    id: 'wellness' as const,
+    title: 'Wellness Mode',
+    description: 'A warmer, uplifting palette for women and wellness visits.',
+    recommendation: 'Great for every day health checks',
+  },
+  {
+    id: 'senior' as const,
+    title: 'Senior Care',
+    description: 'Calm contrast and clear readability for mature users.',
+    recommendation: 'Recommended for older adults',
+  },
+];
+
 export default {
   Colors,
   FontSize,

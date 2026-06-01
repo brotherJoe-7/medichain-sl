@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -9,6 +8,7 @@ import Records from './pages/Records';
 import Settings from './pages/Settings';
 import Analytics from './pages/Analytics';
 import ScanQR from './pages/ScanQR';
+import Login from './pages/Login';
 import AccessLog from './pages/AccessLog';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
@@ -25,6 +25,7 @@ function App() {
           
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/patients" element={<Patients />} />
             <Route path="/appointments" element={<Appointments />} />
             <Route path="/records" element={<Records />} />

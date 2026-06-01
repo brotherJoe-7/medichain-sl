@@ -7,14 +7,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Card, CardBody, Toast, Button } from '../components';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing, ThemePresets, ThemeOptions } from '../theme';
 import QRCode from 'react-native-qrcode-svg';
 import { useStore } from '../store/useStore';
+import { generateQrToken } from '../services/api';
 
 export default function SecurityScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const toastRef = useRef<any>(null);
-  const { user } = useStore();
+  const { user, themeChoice, setThemeChoice } = useStore();
+  const theme = ThemePresets[themeChoice];
   const [privacySettings, setPrivacySettings] = useState({
     twoFactor: true,
     biometric: true,
@@ -22,6 +24,23 @@ export default function SecurityScreen({ navigation }: any) {
     marketingEmails: false,
     activityLog: true,
   });
+  const [qrValue, setQrValue] = useState<string>('');
+
+  // Request server-signed QR token and refresh every 60s
+  React.useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const res = await generateQrToken(user?.id || 'anon');
+        if (mounted && res?.token) setQrValue(res.token);
+      } catch (e) {
+        console.warn('Failed to generate QR token', e);
+      }
+    }
+    load();
+    const id = setInterval(load, 60000);
+    return () => { mounted = false; clearInterval(id); };
+  }, [user?.id]);
 
   const handleToggle = (key: string) => {
     setPrivacySettings({ ...privacySettings, [key]: !privacySettings[key as keyof typeof privacySettings] });
@@ -40,7 +59,7 @@ export default function SecurityScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* ═══ HEADER ═══ */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.md, backgroundColor: theme.primary }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -58,10 +77,10 @@ export default function SecurityScreen({ navigation }: any) {
             <CardBody>
               <View style={styles.qrContainer}>
                 <QRCode
-                  value={user?.id || 'medichain-user'}
+                  value={qrValue}
                   size={150}
-                  color={Colors.primary}
-                  backgroundColor={Colors.white}
+                  color={theme.primary}
+                  backgroundColor={theme.surface}
                 />
                 <Text style={styles.qrText}>
                   Show this QR code to healthcare providers to grant them temporary access to your medical records.
@@ -69,11 +88,14 @@ export default function SecurityScreen({ navigation }: any) {
                 <Button
                   label="Generate New ID"
                   variant="outline"
-                  onPress={() => {
-                    toastRef.current?.show({
-                      message: 'New Medical ID generated',
-                      type: 'success',
-                    });
+                  onPress={async () => {
+                    try {
+                      const res = await generateQrToken(user?.id || 'anon');
+                      if (res?.token) setQrValue(res.token);
+                      toastRef.current?.show({ message: 'New Medical ID generated', type: 'success' });
+                    } catch (e) {
+                      toastRef.current?.show({ message: 'Failed to generate ID', type: 'danger' });
+                    }
                   }}
                   style={{ marginTop: Spacing.md, width: '100%' }}
                 />
@@ -172,6 +194,41 @@ export default function SecurityScreen({ navigation }: any) {
           </Card>
         </View>
 
+        {/* ═══ APP THEME SECTION ═══ */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App Theme</Text>
+          <Text style={styles.sectionSubtitle}>Choose a palette based on your care style.</Text>
+          {ThemeOptions.map((option) => {
+            const preset = ThemePresets[option.id];
+            const isSelected = option.id === themeChoice;
+            return (
+              <TouchableOpacity
+                key={option.id}
+                style={[styles.themeCard, isSelected && styles.themeCardSelected]}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setThemeChoice(option.id);
+                  toastRef.current?.show({ message: `${option.title} theme selected`, type: 'success' });
+                }}
+              >
+                <View style={styles.themeRow}>
+                  <View style={[styles.themeSwatch, { backgroundColor: preset.primary }]} />
+                  <View style={styles.themeMeta}>
+                    <Text style={styles.themeTitle}>{option.title}</Text>
+                    <Text style={styles.themeDesc}>{option.description}</Text>
+                    <Text style={styles.themeRecommendation}>{option.recommendation}</Text>
+                  </View>
+                  <Ionicons
+                    name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={22}
+                    color={isSelected ? theme.primary : Colors.neutral400}
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* ═══ DATA SECTION ═══ */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data & Privacy</Text>
@@ -179,7 +236,7 @@ export default function SecurityScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('DataPrivacy')}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                <View style={[styles.settingIcon, { backgroundColor: Colors.primaryLight }]}>
                   <Ionicons name="document-text" size={20} color={Colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -194,7 +251,7 @@ export default function SecurityScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <TouchableOpacity style={styles.settingItem}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                <View style={[styles.settingIcon, { backgroundColor: Colors.primaryLight }]}>
                   <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -209,7 +266,7 @@ export default function SecurityScreen({ navigation }: any) {
           <Card style={styles.flatCard}>
             <CardBody>
               <TouchableOpacity style={styles.settingItem}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+                <View style={[styles.settingIcon, { backgroundColor: Colors.dangerLight }]}> 
                   <Ionicons name="trash" size={20} color={Colors.danger} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -276,6 +333,52 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.bold,
     color: Colors.neutral900,
     marginBottom: Spacing.md,
+  },
+  sectionSubtitle: {
+    fontSize: FontSize.body,
+    color: Colors.neutral600,
+    marginBottom: Spacing.md,
+  },
+  themeCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+    marginBottom: Spacing.sm,
+    padding: Spacing.md,
+  },
+  themeCardSelected: {
+    borderColor: Colors.primary,
+    borderWidth: 2,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  themeSwatch: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+  },
+  themeMeta: {
+    flex: 1,
+  },
+  themeTitle: {
+    fontSize: FontSize.body,
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral900,
+    marginBottom: Spacing.xs,
+  },
+  themeDesc: {
+    fontSize: FontSize.bodySmall,
+    color: Colors.neutral600,
+    marginBottom: Spacing.xs,
+  },
+  themeRecommendation: {
+    fontSize: FontSize.label,
+    color: Colors.primary,
+    fontWeight: FontWeight.medium,
   },
 
   // ═══ CARDS ═══

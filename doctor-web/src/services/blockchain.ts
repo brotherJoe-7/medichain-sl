@@ -1,6 +1,6 @@
 import type { MedicalRecord, BlockchainStatus } from '../types';
 
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000/api';
+const GATEWAY_URL = (import.meta as any).env.VITE_GATEWAY_URL || 'http://localhost:3000/api';
 
 // ─── Hyperledger Fabric API Connection (Replacing MetaMask) ─────────────
 
@@ -68,15 +68,20 @@ export const addRecordToBlockchain = async (
 
 export const verifyRecordOnChain = async (
   recordId: string
-): Promise<{ verified: boolean; blockNumber?: number; timestamp?: Date }> => {
+): Promise<{ verified: boolean; recordId?: string; blockNumber?: number; timestamp?: Date }> => {
   // Currently the API gateway doesn't have a direct /verify endpoint.
   // We assume verified true for now, but this will fail if the gateway itself is down.
   try {
     const res = await fetch(`${GATEWAY_URL}/health`);
     if (!res.ok) throw new Error();
-    return { verified: true, blockNumber: Math.floor(Math.random() * 1000000), timestamp: new Date() };
+    return {
+      verified: true,
+      recordId,
+      blockNumber: Math.floor(Math.random() * 1000000),
+      timestamp: new Date(),
+    };
   } catch {
-    return { verified: false };
+    return { verified: false, recordId };
   }
 };
 
@@ -91,8 +96,9 @@ export const grantPatientAccess = async (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        patientId: patientAddress, 
-        doctorId: doctorAddress
+        patientId: patientAddress,
+        doctorId: doctorAddress,
+        durationDays,
       })
     });
     if (!response.ok) throw new Error('API request failed');
@@ -130,6 +136,8 @@ export const checkDoctorAccess = async (
   doctorAddress: string,
   patientAddress: string
 ): Promise<{ hasAccess: boolean; expiresAt?: Date }> => {
+  // Placeholder access logic for the demo.
+  console.debug('Checking access for', doctorAddress, 'and', patientAddress);
   return { hasAccess: true, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) };
 };
 

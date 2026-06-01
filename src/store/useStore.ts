@@ -9,10 +9,14 @@
  */
 import { create } from 'zustand';
 import { User, Medication, Record, Appointment, BlockchainLog, HealthMetric, Allergy, DoctorAccessRequest } from '../types';
+import { ThemeKey } from '../theme';
 import {
   UserDB, MedicationDB, RecordDB, AppointmentDB,
   BlockchainLogDB, HealthMetricDB, AllergyDB, isSeeded,
 } from '../services/database';
+import { fetchPatientRecords, fetchAuditLogs } from '../services/api';
+import { fetchWalletBalance } from '../services/api';
+
 
 // ─── Default Seed Data ──────────────────────────────────────────────────────
 // Used only on first install; SQLite takes over after that.
@@ -102,6 +106,7 @@ interface AppState {
   updateMedicationStatus: (id: string, status: Medication['status']) => Promise<void>;
 
   addAppointment: (app: Appointment) => Promise<void>;
+  updateAppointmentStatus: (id: string, status: Appointment['status']) => Promise<void>;
   removeAppointment: (id: string) => Promise<void>;
 
   addBlockchainLog: (log: BlockchainLog) => Promise<void>;
@@ -127,6 +132,9 @@ interface AppState {
   isBiometricsEnabled: boolean;
   setMfaEnabled: (value: boolean) => void;
   setBiometricsEnabled: (value: boolean) => void;
+
+  themeChoice: ThemeKey;
+  setThemeChoice: (themeChoice: ThemeKey) => void;
 }
 
 // ─── Store ──────────────────────────────────────────────────────────────────
@@ -146,14 +154,14 @@ export const useStore = create<AppState>((set, get) => ({
   setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
   logout: () => set({ user: null, isAuthenticated: false }),
 
-  // Health data (start with seed; loadFromDatabase() replaces on startup)
-  medications: SEED_MEDICATIONS,
-  records: SEED_RECORDS,
-  appointments: SEED_APPOINTMENTS,
-  blockchainLogs: SEED_BLOCKCHAIN_LOGS,
-  healthMetrics: SEED_HEALTH_METRICS,
-  allergies: SEED_ALLERGIES,
-  accessRequests: SEED_ACCESS_REQUESTS,
+  // Health data starts empty; data is loaded from SQLite when available.
+  medications: [],
+  records: [],
+  appointments: [],
+  blockchainLogs: [],
+  healthMetrics: [],
+  allergies: [],
+  accessRequests: [],
 
   // ── DB Loader ──────────────────────────────────────────────────────────
   loadFromDatabase: async () => {
@@ -161,53 +169,58 @@ export const useStore = create<AppState>((set, get) => ({
       const alreadySeeded = await isSeeded();
 
       if (!alreadySeeded) {
-        // First run — seed the database with default data
-        await MedicationDB.seed(SEED_MEDICATIONS);
-        await RecordDB.seed(SEED_RECORDS);
-        await AppointmentDB.seed(SEED_APPOINTMENTS);
-        await BlockchainLogDB.seed(SEED_BLOCKCHAIN_LOGS);
-        await HealthMetricDB.seed(SEED_HEALTH_METRICS);
-        await AllergyDB.seed(SEED_ALLERGIES);
-        console.log('[DB] First run — seeded default data');
+        // First run — no sample data seeded yet.
+        console.log('[DB] First run — starting with an empty patient dataset.');
       }
 
       // Always load from DB into Zustand
-      let [meds, records, appts, logs, metrics, allergies, user] = await Promise.all([
-        MedicationDB.getAll(),
-        RecordDB.getAll(),
-        AppointmentDB.getAll(),
-        BlockchainLogDB.getAll(),
-        HealthMetricDB.getAll(),
-        AllergyDB.getAll(),
-        UserDB.get(),
+      const user = await UserDB.get();
+      const patientId = user?.id;
+
+      let [meds, records, appts, logs, metrics, allergies] = await Promise.all([
+        MedicationDB.getAll(patientId),
+        RecordDB.getAll(patientId),
+        AppointmentDB.getAll(patientId),
+        BlockchainLogDB.getAll(patientId),
+        HealthMetricDB.getAll(patientId),
+        AllergyDB.getAll(patientId),
       ]);
 
       // --- DYNAMIC DATA INJECTION ---
-      // Fetch live data from the backend if available
+      // Fetch live data from the backend only for an authenticated user.
       try {
-        const { fetchPatientRecords, fetchAuditLogs } = require('../services/api');
-        const liveRecords = await fetchPatientRecords('PAT-1'); // Currently hardcoded to patient 1 for demo
-        const liveLogs = await fetchAuditLogs('PAT-1');
-        
-        if (liveRecords && liveRecords.length > 0) {
-          records = liveRecords.map((r: any) => ({
-            id: r.id || r.recordId || Math.random().toString(),
-            title: r.type || r.recordType || 'Medical Record',
-            date: r.date || r.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0],
-            type: r.type || r.recordType || 'General',
-            doctor: r.doctorId || 'Unknown Doctor',
-            hospital: 'Hyperledger Fabric Network'
-          }));
-        }
+        if (patientId) {
+          const liveRecords = await fetchPatientRecords(patientId);
+          const liveLogs = await fetchAuditLogs(patientId);
 
-        if (liveLogs && liveLogs.length > 0) {
-          logs = liveLogs.map((l: any) => ({
-            id: l.id || Math.random().toString(),
-            action: l.action,
-            timestamp: l.timestamp?.split('T').join(' ') || new Date().toISOString(),
-            details: l.details,
-            txHash: l.txHash || '0x...'
-          }));
+          if (liveRecords && liveRecords.length > 0) {
+            records = liveRecords.map((r: any) => ({
+              id: r.id || r.recordId || Math.random().toString(),
+              title: r.title || r.recordType || 'Medical Record',
+              date: r.date || r.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0],
+              type: r.type || r.recordType || 'General',
+              doctor: r.doctor || r.doctorId || 'Unknown Doctor',
+              hospital: r.hospital || 'Hyperledger Fabric Network',
+              hash: r.documentHash || r.hash || '',
+              fileUri: r.ipfsHash ? `https://ipfs.io/ipfs/${r.ipfsHash}` : '',
+              aiInsights: r.aiInsights || '',
+              notarized: true,
+              patientId,
+            }));
+          }
+
+          if (liveLogs && liveLogs.length > 0) {
+            logs = liveLogs.map((l: any) => ({
+              id: l.id || Math.random().toString(),
+              action: l.action,
+              timestamp: l.timestamp?.split('T').join(' ') || new Date().toISOString(),
+              details: l.details,
+              txHash: l.txHash || '0x...',
+              patientId,
+            }));
+          }
+        } else {
+          console.log('[DB] No authenticated user present; skipping live record fetch.');
         }
       } catch (e) {
         console.log('Backend not reachable, falling back to local SQLite data.');
@@ -225,7 +238,67 @@ export const useStore = create<AppState>((set, get) => ({
         isDbReady: true,
       });
 
-      console.log('[DB] Loaded all data from SQLite + Live Backend API');
+      console.log('[DB] Loaded local SQLite data and opened secure vault.');
+
+      if (patientId) {
+        (async () => {
+          try {
+            const [liveRecords, liveLogs] = await Promise.all([
+              fetchPatientRecords(patientId),
+              fetchAuditLogs(patientId),
+            ]);
+
+            let updatedRecords = records;
+            let updatedLogs = logs;
+
+            if (liveRecords && liveRecords.length > 0) {
+              updatedRecords = liveRecords.map((r: any) => ({
+                id: r.id || r.recordId || Math.random().toString(),
+                title: r.title || r.recordType || 'Medical Record',
+                date: r.date || r.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0],
+                type: r.type || r.recordType || 'General',
+                doctor: r.doctor || r.doctorId || 'Unknown Doctor',
+                hospital: r.hospital || 'Hyperledger Fabric Network',
+                hash: r.documentHash || r.hash || '',
+                fileUri: r.ipfsHash ? `https://ipfs.io/ipfs/${r.ipfsHash}` : '',
+                aiInsights: r.aiInsights || '',
+                notarized: true,
+                patientId,
+              }));
+            }
+
+            if (liveLogs && liveLogs.length > 0) {
+              updatedLogs = liveLogs.map((l: any) => ({
+                id: l.id || Math.random().toString(),
+                action: l.action,
+                timestamp: l.timestamp?.split('T').join(' ') || new Date().toISOString(),
+                details: l.details,
+                txHash: l.txHash || '0x...',
+                patientId,
+              }));
+            }
+
+            if (updatedRecords !== records || updatedLogs !== logs) {
+              set({ records: updatedRecords, blockchainLogs: updatedLogs });
+              console.log('[DB] Background sync refreshed records and audit logs.');
+            }
+
+            // Fetch wallet balance from backend (blockchain) if available
+            try {
+              const walletRes = await fetchWalletBalance(patientId);
+              if (walletRes && typeof walletRes.balance === 'number') {
+                set({ tokens: walletRes.balance });
+              }
+            } catch (e) {
+              // Ignore wallet fetch failures — keep local state
+            }
+          } catch (e) {
+            console.log('Backend not reachable, continuing with local SQLite data.');
+          }
+        })();
+      } else {
+        console.log('[DB] No authenticated user present; skipping live record fetch.');
+      }
     } catch (err) {
       console.error('[DB] Failed to load from database:', err);
       // Graceful fallback: keep seed data, mark db ready so app still shows
@@ -235,8 +308,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── Records ────────────────────────────────────────────────────────────
   addRecord: async (record) => {
-    await RecordDB.insert(record);
-    set((state) => ({ records: [record, ...state.records] }));
+    const patientId = get().user?.id;
+    const recordWithPatient = { ...record, patientId };
+    await RecordDB.insert(recordWithPatient);
+    set((state) => ({ records: [recordWithPatient, ...state.records] }));
   },
   removeRecord: async (id) => {
     await RecordDB.delete(id);
@@ -245,8 +320,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── Medications ────────────────────────────────────────────────────────
   addMedication: async (med) => {
-    await MedicationDB.insert(med);
-    set((state) => ({ medications: [...state.medications, med] }));
+    const patientId = get().user?.id;
+    const medWithPatient = { ...med, patientId };
+    await MedicationDB.insert(medWithPatient);
+    set((state) => ({ medications: [...state.medications, medWithPatient] }));
   },
   removeMedication: async (id) => {
     await MedicationDB.delete(id);
@@ -261,8 +338,16 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── Appointments ───────────────────────────────────────────────────────
   addAppointment: async (app) => {
-    await AppointmentDB.insert(app);
-    set((state) => ({ appointments: [...state.appointments, app] }));
+    const patientId = get().user?.id;
+    const appWithPatient = { ...app, patientId };
+    await AppointmentDB.insert(appWithPatient);
+    set((state) => ({ appointments: [...state.appointments, appWithPatient] }));
+  },
+  updateAppointmentStatus: async (id, status) => {
+    await AppointmentDB.updateStatus(id, status);
+    set((state) => ({
+      appointments: state.appointments.map(a => a.id === id ? { ...a, status } : a),
+    }));
   },
   removeAppointment: async (id) => {
     await AppointmentDB.delete(id);
@@ -271,14 +356,18 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── Blockchain Logs ────────────────────────────────────────────────────
   addBlockchainLog: async (log) => {
-    await BlockchainLogDB.insert(log);
-    set((state) => ({ blockchainLogs: [log, ...state.blockchainLogs] }));
+    const patientId = get().user?.id;
+    const logWithPatient = { ...log, patientId };
+    await BlockchainLogDB.insert(logWithPatient);
+    set((state) => ({ blockchainLogs: [logWithPatient, ...state.blockchainLogs] }));
   },
 
   // ── Allergies ──────────────────────────────────────────────────────────
   addAllergy: async (allergy) => {
-    await AllergyDB.insert(allergy);
-    set((state) => ({ allergies: [...state.allergies, allergy] }));
+    const patientId = get().user?.id;
+    const allergyWithPatient = { ...allergy, patientId };
+    await AllergyDB.insert(allergyWithPatient);
+    set((state) => ({ allergies: [...state.allergies, allergyWithPatient] }));
   },
   removeAllergy: async (id) => {
     await AllergyDB.delete(id);
@@ -301,7 +390,8 @@ export const useStore = create<AppState>((set, get) => ({
   isScanning: false,
   setIsScanning: (isScanning) => set({ isScanning }),
 
-  tokens: 1250,
+  // Tokens are a mock reward balance (MTK). Default to 0 in production.
+  tokens: 0,
   isDataSharingEnabled: false,
   setSharingEnabled: (isDataSharingEnabled) => set({ isDataSharingEnabled }),
   addTokens: (amount) => set((state) => ({ tokens: state.tokens + amount })),
@@ -310,4 +400,7 @@ export const useStore = create<AppState>((set, get) => ({
   isBiometricsEnabled: true,
   setMfaEnabled: (isMfaEnabled) => set({ isMfaEnabled }),
   setBiometricsEnabled: (isBiometricsEnabled) => set({ isBiometricsEnabled }),
+
+  themeChoice: 'classic',
+  setThemeChoice: (themeChoice) => set({ themeChoice }),
 }));

@@ -30,28 +30,30 @@ export async function initDatabase(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS medications (
-      id        TEXT PRIMARY KEY,
-      name      TEXT NOT NULL,
-      dosage    TEXT NOT NULL,
-      frequency TEXT,
-      time      TEXT NOT NULL,
-      status    TEXT NOT NULL DEFAULT 'pending'
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      dosage     TEXT NOT NULL,
+      frequency  TEXT,
+      time       TEXT NOT NULL,
+      status     TEXT NOT NULL DEFAULT 'pending',
+      patient_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS records (
-      id          TEXT PRIMARY KEY,
-      title       TEXT NOT NULL,
-      date        TEXT NOT NULL,
-      type        TEXT NOT NULL,
-      doctor      TEXT NOT NULL,
-      hospital    TEXT NOT NULL,
-      file_uri    TEXT,
-      ai_insights TEXT,
-      hash        TEXT,
-      notarized   INTEGER DEFAULT 0,
-      supersedes  TEXT,
-      fhir_resource TEXT,
-      patient_signature TEXT
+      id             TEXT PRIMARY KEY,
+      title          TEXT NOT NULL,
+      date           TEXT NOT NULL,
+      type           TEXT NOT NULL,
+      doctor         TEXT NOT NULL,
+      hospital       TEXT NOT NULL,
+      file_uri       TEXT,
+      ai_insights    TEXT,
+      hash           TEXT,
+      notarized      INTEGER DEFAULT 0,
+      supersedes     TEXT,
+      fhir_resource  TEXT,
+      patient_signature TEXT,
+      patient_id     TEXT
     );
 
     CREATE TABLE IF NOT EXISTS appointments (
@@ -60,31 +62,35 @@ export async function initDatabase(): Promise<void> {
       specialty   TEXT NOT NULL,
       date        TEXT NOT NULL,
       time        TEXT NOT NULL,
-      status      TEXT NOT NULL DEFAULT 'upcoming'
+      status      TEXT NOT NULL DEFAULT 'upcoming',
+      patient_id  TEXT
     );
 
     CREATE TABLE IF NOT EXISTS blockchain_logs (
-      id        TEXT PRIMARY KEY,
-      action    TEXT NOT NULL,
-      timestamp TEXT NOT NULL,
-      details   TEXT NOT NULL,
-      tx_hash   TEXT NOT NULL
+      id         TEXT PRIMARY KEY,
+      action     TEXT NOT NULL,
+      timestamp  TEXT NOT NULL,
+      details    TEXT NOT NULL,
+      tx_hash    TEXT NOT NULL,
+      patient_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS health_metrics (
-      id   TEXT PRIMARY KEY,
-      type TEXT NOT NULL,
-      value REAL NOT NULL,
-      unit TEXT NOT NULL,
-      date TEXT NOT NULL
+      id         TEXT PRIMARY KEY,
+      type       TEXT NOT NULL,
+      value      REAL NOT NULL,
+      unit       TEXT NOT NULL,
+      date       TEXT NOT NULL,
+      patient_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS allergies (
-      id       TEXT PRIMARY KEY,
-      type     TEXT NOT NULL,
-      name     TEXT NOT NULL,
-      severity TEXT NOT NULL,
-      reaction TEXT NOT NULL
+      id         TEXT PRIMARY KEY,
+      type       TEXT NOT NULL,
+      name       TEXT NOT NULL,
+      severity   TEXT NOT NULL,
+      reaction   TEXT NOT NULL,
+      patient_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS doctor_access_requests (
@@ -94,7 +100,8 @@ export async function initDatabase(): Promise<void> {
       hospital      TEXT NOT NULL,
       requested_at  TEXT NOT NULL,
       status        TEXT NOT NULL DEFAULT 'pending',
-      expires_at    TEXT
+      expires_at    TEXT,
+      patient_id    TEXT
     );
 
     CREATE TABLE IF NOT EXISTS record_amendments (
@@ -117,6 +124,7 @@ export async function initDatabase(): Promise<void> {
       FOREIGN KEY (record_id) REFERENCES records(id)
     );
   `);
+  await migratePatientColumns();
 }
 
 function getDb(): SQLite.SQLiteDatabase {
@@ -124,11 +132,40 @@ function getDb(): SQLite.SQLiteDatabase {
   return db;
 }
 
+async function columnExists(table: string, column: string): Promise<boolean> {
+  const rows = await getDb().getAllAsync<any>(`PRAGMA table_info(${table})`);
+  return rows.some((row: any) => row.name === column);
+}
+
+async function migratePatientColumns(): Promise<void> {
+  const tables = [
+    'medications',
+    'records',
+    'appointments',
+    'blockchain_logs',
+    'health_metrics',
+    'allergies',
+    'doctor_access_requests',
+  ];
+
+  for (const table of tables) {
+    if (!(await columnExists(table, 'patient_id'))) {
+      await getDb().runAsync(`ALTER TABLE ${table} ADD COLUMN patient_id TEXT`);
+    }
+  }
+}
+
 // ─── Users ─────────────────────────────────────────────────────────────────
 
 export const UserDB = {
   async get(): Promise<User | null> {
     const row = await getDb().getFirstAsync<any>('SELECT * FROM users LIMIT 1');
+    if (!row) return null;
+    return mapUser(row);
+  },
+
+  async getById(id: string): Promise<User | null> {
+    const row = await getDb().getFirstAsync<any>('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
     if (!row) return null;
     return mapUser(row);
   },
@@ -153,15 +190,19 @@ export const UserDB = {
 // ─── Medications ────────────────────────────────────────────────────────────
 
 export const MedicationDB = {
-  async getAll(): Promise<Medication[]> {
-    const rows = await getDb().getAllAsync<any>('SELECT * FROM medications ORDER BY time ASC');
+  async getAll(patientId?: string): Promise<Medication[]> {
+    if (!patientId) return [];
+    const rows = await getDb().getAllAsync<any>(
+      'SELECT * FROM medications WHERE patient_id = ? ORDER BY time ASC',
+      [patientId]
+    );
     return rows.map(mapMedication);
   },
 
   async insert(med: Medication): Promise<void> {
     await getDb().runAsync(
-      'INSERT OR REPLACE INTO medications (id, name, dosage, frequency, time, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [med.id, med.name, med.dosage, med.frequency ?? null, med.time, med.status]
+      'INSERT OR REPLACE INTO medications (id, name, dosage, frequency, time, status, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [med.id, med.name, med.dosage, med.frequency ?? null, med.time, med.status, med.patientId ?? null]
     );
   },
 
@@ -181,16 +222,20 @@ export const MedicationDB = {
 // ─── Records ────────────────────────────────────────────────────────────────
 
 export const RecordDB = {
-  async getAll(): Promise<Record[]> {
-    const rows = await getDb().getAllAsync<any>('SELECT * FROM records ORDER BY date DESC');
+  async getAll(patientId?: string): Promise<Record[]> {
+    if (!patientId) return [];
+    const rows = await getDb().getAllAsync<any>(
+      'SELECT * FROM records WHERE patient_id = ? ORDER BY date DESC',
+      [patientId]
+    );
     return rows.map(mapRecord);
   },
 
   async insert(record: Record): Promise<void> {
     await getDb().runAsync(
       `INSERT OR REPLACE INTO records
-         (id, title, date, type, doctor, hospital, file_uri, ai_insights, hash, notarized, supersedes, fhir_resource, patient_signature)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, title, date, type, doctor, hospital, file_uri, ai_insights, hash, notarized, supersedes, fhir_resource, patient_signature, patient_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         record.id, record.title, record.date, record.type,
         record.doctor, record.hospital,
@@ -199,6 +244,7 @@ export const RecordDB = {
         record.supersedes ?? null,
         record.fhirResource ? JSON.stringify(record.fhirResource) : null,
         null, // patient_signature - populated via signRecord
+        record.patientId ?? null,
       ]
     );
   },
@@ -215,16 +261,24 @@ export const RecordDB = {
 // ─── Appointments ──────────────────────────────────────────────────────────
 
 export const AppointmentDB = {
-  async getAll(): Promise<Appointment[]> {
-    const rows = await getDb().getAllAsync<any>('SELECT * FROM appointments ORDER BY date ASC');
+  async getAll(patientId?: string): Promise<Appointment[]> {
+    if (!patientId) return [];
+    const rows = await getDb().getAllAsync<any>(
+      'SELECT * FROM appointments WHERE patient_id = ? ORDER BY date ASC',
+      [patientId]
+    );
     return rows.map(mapAppointment);
   },
 
   async insert(appt: Appointment): Promise<void> {
     await getDb().runAsync(
-      'INSERT OR REPLACE INTO appointments (id, doctor_name, specialty, date, time, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [appt.id, appt.doctorName, appt.specialty, appt.date, appt.time, appt.status]
+      'INSERT OR REPLACE INTO appointments (id, doctor_name, specialty, date, time, status, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [appt.id, appt.doctorName, appt.specialty, appt.date, appt.time, appt.status, appt.patientId ?? null]
     );
+  },
+
+  async updateStatus(id: string, status: Appointment['status']): Promise<void> {
+    await getDb().runAsync('UPDATE appointments SET status = ? WHERE id = ?', [status, id]);
   },
 
   async delete(id: string): Promise<void> {
@@ -239,17 +293,19 @@ export const AppointmentDB = {
 // ─── Blockchain Logs ────────────────────────────────────────────────────────
 
 export const BlockchainLogDB = {
-  async getAll(): Promise<BlockchainLog[]> {
+  async getAll(patientId?: string): Promise<BlockchainLog[]> {
+    if (!patientId) return [];
     const rows = await getDb().getAllAsync<any>(
-      'SELECT * FROM blockchain_logs ORDER BY timestamp DESC LIMIT 50'
+      'SELECT * FROM blockchain_logs WHERE patient_id = ? ORDER BY timestamp DESC LIMIT 50',
+      [patientId]
     );
     return rows.map(mapLog);
   },
 
   async insert(log: BlockchainLog): Promise<void> {
     await getDb().runAsync(
-      'INSERT OR REPLACE INTO blockchain_logs (id, action, timestamp, details, tx_hash) VALUES (?, ?, ?, ?, ?)',
-      [log.id, log.action, log.timestamp, log.details, log.txHash]
+      'INSERT OR REPLACE INTO blockchain_logs (id, action, timestamp, details, tx_hash, patient_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [log.id, log.action, log.timestamp, log.details, log.txHash, log.patientId ?? null]
     );
   },
 
@@ -261,15 +317,19 @@ export const BlockchainLogDB = {
 // ─── Health Metrics ─────────────────────────────────────────────────────────
 
 export const HealthMetricDB = {
-  async getAll(): Promise<HealthMetric[]> {
-    const rows = await getDb().getAllAsync<any>('SELECT * FROM health_metrics ORDER BY date ASC');
+  async getAll(patientId?: string): Promise<HealthMetric[]> {
+    if (!patientId) return [];
+    const rows = await getDb().getAllAsync<any>(
+      'SELECT * FROM health_metrics WHERE patient_id = ? ORDER BY date ASC',
+      [patientId]
+    );
     return rows.map(mapMetric);
   },
 
   async insert(metric: HealthMetric): Promise<void> {
     await getDb().runAsync(
-      'INSERT OR REPLACE INTO health_metrics (id, type, value, unit, date) VALUES (?, ?, ?, ?, ?)',
-      [metric.id, metric.type, metric.value, metric.unit, metric.date]
+      'INSERT OR REPLACE INTO health_metrics (id, type, value, unit, date, patient_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [metric.id, metric.type, metric.value, metric.unit, metric.date, metric.patientId ?? null]
     );
   },
 
@@ -281,15 +341,19 @@ export const HealthMetricDB = {
 // ─── Allergies ──────────────────────────────────────────────────────────────
 
 export const AllergyDB = {
-  async getAll(): Promise<Allergy[]> {
-    const rows = await getDb().getAllAsync<any>('SELECT * FROM allergies ORDER BY severity DESC');
+  async getAll(patientId?: string): Promise<Allergy[]> {
+    if (!patientId) return [];
+    const rows = await getDb().getAllAsync<any>(
+      'SELECT * FROM allergies WHERE patient_id = ? ORDER BY severity DESC',
+      [patientId]
+    );
     return rows.map(mapAllergy);
   },
 
   async insert(allergy: Allergy): Promise<void> {
     await getDb().runAsync(
-      'INSERT OR REPLACE INTO allergies (id, type, name, severity, reaction) VALUES (?, ?, ?, ?, ?)',
-      [allergy.id, allergy.type, allergy.name, allergy.severity, allergy.reaction]
+      'INSERT OR REPLACE INTO allergies (id, type, name, severity, reaction, patient_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [allergy.id, allergy.type, allergy.name, allergy.severity, allergy.reaction, allergy.patientId ?? null]
     );
   },
 
@@ -305,18 +369,22 @@ export const AllergyDB = {
 // ─── Doctor Access Requests (GAP 5) ─────────────────────────────────────────
 
 export const DoctorAccessRequestDB = {
-  async getAll(): Promise<DoctorAccessRequest[]> {
+  async getAll(patientId?: string): Promise<DoctorAccessRequest[]> {
+    if (!patientId) return [];
     const rows = await getDb().getAllAsync<any>(
-      'SELECT * FROM doctor_access_requests ORDER BY requested_at DESC'
+      'SELECT * FROM doctor_access_requests WHERE patient_id = ? ORDER BY requested_at DESC',
+      [patientId]
     );
     return rows.map(mapDoctorAccessRequest);
   },
 
-  async getPending(): Promise<DoctorAccessRequest[]> {
+  async getPending(patientId?: string): Promise<DoctorAccessRequest[]> {
+    if (!patientId) return [];
     const rows = await getDb().getAllAsync<any>(
       `SELECT * FROM doctor_access_requests 
-       WHERE status = 'pending' AND (expires_at IS NULL OR expires_at > datetime('now'))
-       ORDER BY requested_at DESC`
+       WHERE patient_id = ? AND status = 'pending' AND (expires_at IS NULL OR expires_at > datetime('now'))
+       ORDER BY requested_at DESC`,
+      [patientId]
     );
     return rows.map(mapDoctorAccessRequest);
   },
@@ -324,9 +392,9 @@ export const DoctorAccessRequestDB = {
   async insert(request: DoctorAccessRequest): Promise<void> {
     await getDb().runAsync(
       `INSERT OR REPLACE INTO doctor_access_requests 
-       (id, doctor_id, doctor_name, hospital, requested_at, status, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [request.id, request.doctorId, request.doctorName, request.hospital, request.requestedAt, request.status, null]
+       (id, doctor_id, doctor_name, hospital, requested_at, status, expires_at, patient_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [request.id, request.doctorId, request.doctorName, request.hospital, request.requestedAt, request.status, null, request.patientId ?? null]
     );
   },
 
@@ -427,6 +495,7 @@ function mapMedication(row: any): Medication {
     frequency: row.frequency ?? undefined,
     time: row.time,
     status: row.status as Medication['status'],
+    patientId: row.patient_id ?? undefined,
   };
 }
 
@@ -444,6 +513,7 @@ function mapRecord(row: any): Record {
     notarized: row.notarized === 1,
     supersedes: row.supersedes ?? undefined,
     fhirResource: row.fhir_resource ? JSON.parse(row.fhir_resource) : undefined,
+    patientId: row.patient_id ?? undefined,
   };
 }
 
@@ -455,6 +525,7 @@ function mapAppointment(row: any): Appointment {
     date: row.date,
     time: row.time,
     status: row.status as Appointment['status'],
+    patientId: row.patient_id ?? undefined,
   };
 }
 
@@ -465,6 +536,7 @@ function mapLog(row: any): BlockchainLog {
     timestamp: row.timestamp,
     details: row.details,
     txHash: row.tx_hash,
+    patientId: row.patient_id ?? undefined,
   };
 }
 
@@ -475,6 +547,7 @@ function mapMetric(row: any): HealthMetric {
     value: row.value,
     unit: row.unit,
     date: row.date,
+    patientId: row.patient_id ?? undefined,
   };
 }
 
@@ -485,6 +558,7 @@ function mapAllergy(row: any): Allergy {
     name: row.name,
     severity: row.severity as Allergy['severity'],
     reaction: row.reaction,
+    patientId: row.patient_id ?? undefined,
   };
 }
 
@@ -496,5 +570,6 @@ function mapDoctorAccessRequest(row: any): DoctorAccessRequest {
     hospital: row.hospital,
     requestedAt: row.requested_at,
     status: row.status as DoctorAccessRequest['status'],
+    patientId: row.patient_id ?? undefined,
   };
 }
