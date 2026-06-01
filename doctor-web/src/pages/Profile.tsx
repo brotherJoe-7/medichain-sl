@@ -1,5 +1,4 @@
-import React from 'react';
-import { User, Mail, Phone, MapPin, Award, Shield, FileText, Activity, Camera } from 'lucide-react';
+import { Mail, Phone, MapPin, Award, Shield, FileText, Activity, Camera } from 'lucide-react';
 
 function load(key: string, fallback: string) {
   return localStorage.getItem(key) || fallback;
