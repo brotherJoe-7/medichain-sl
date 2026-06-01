@@ -16,7 +16,7 @@ import { NavLink } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { id: 'patients', label: 'My Patients', icon: Users, path: '/patients' },
     { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
     { id: 'records', label: 'Medical Records', icon: FileText, path: '/records' },

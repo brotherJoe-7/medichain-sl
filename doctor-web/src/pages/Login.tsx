@@ -43,7 +43,7 @@ const Login = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      backgroundColor: '#ffffff',
       padding: '1.5rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     }}>
@@ -52,12 +52,13 @@ const Login = () => {
         <div style={{
           backgroundColor: '#ffffff',
           borderRadius: '12px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)',
           overflow: 'hidden',
+          border: '1px solid #E5E7EB',
         }}>
           {/* Header Background */}
           <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            backgroundColor: 'var(--primary)',
             padding: '3rem 2rem 2rem',
             textAlign: 'center',
           }}>
@@ -155,9 +156,9 @@ const Login = () => {
                   fontWeight: 500,
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#667eea';
+                  e.currentTarget.style.borderColor = 'var(--primary)';
                   e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = error && !doctorId ? '#EF4444' : '#E5E7EB';
@@ -205,9 +206,9 @@ const Login = () => {
                     fontWeight: 500,
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#667eea';
+                    e.currentTarget.style.borderColor = 'var(--primary)';
                     e.currentTarget.style.backgroundColor = '#FFFFFF';
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
                   }}
                   onBlur={(e) => {
                     e.currentTarget.style.borderColor = error && !password ? '#EF4444' : '#E5E7EB';
@@ -233,7 +234,7 @@ const Login = () => {
                     transition: 'color 0.2s ease',
                     opacity: loading ? 0.5 : 1,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#667eea'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#6B7280'; }}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -250,9 +251,9 @@ const Login = () => {
                 padding: '0.95rem 1.5rem',
                 borderRadius: '8px',
                 border: 'none',
-                background: loading || !doctorId.trim() || !password.trim()
-                  ? 'linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%)'
-                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundColor: loading || !doctorId.trim() || !password.trim()
+                  ? '#D1D5DB'
+                  : 'var(--primary)',
                 color: 'white',
                 fontWeight: 600,
                 fontSize: '0.95rem',
@@ -264,18 +265,18 @@ const Login = () => {
                 gap: '0.5rem',
                 boxShadow: loading || !doctorId.trim() || !password.trim()
                   ? 'none'
-                  : '0 4px 15px rgba(102, 126, 234, 0.4)',
+                  : '0 4px 15px rgba(0, 0, 0, 0.1)',
                 letterSpacing: '0.3px',
               }}
               onMouseEnter={(e) => {
                 if (!loading && doctorId.trim() && password.trim()) {
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.5)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!loading && doctorId.trim() && password.trim()) {
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }
               }}
@@ -308,7 +309,7 @@ const Login = () => {
           textAlign: 'center',
           marginTop: '1.5rem',
           fontSize: '0.8rem',
-          color: 'rgba(255, 255, 255, 0.8)',
+          color: '#6B7280',
           letterSpacing: '0.2px',
         }}>
           Demo: Use <span style={{ fontWeight: 600 }}>doctor_smith</span> / <span style={{ fontWeight: 600 }}>password</span>
