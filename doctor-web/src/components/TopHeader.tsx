@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Plus, Wallet, Check, ChevronDown, LogOut, LogIn } from 'lucide-react';
+import { Search, Bell, Plus, Wallet, Check, ChevronDown, LogOut } from 'lucide-react';
 import { connectWallet, disconnectWallet } from '../services/blockchain';
 
 // A global event bus so other components (like Records page) can receive the "New Record" click
@@ -9,15 +9,12 @@ export const emitNewRecord = () => window.dispatchEvent(new CustomEvent('mc:new-
 const TopHeader: React.FC = () => {
   const navigate = useNavigate();
   const [address, setAddress] = useState<string | null>(localStorage.getItem('mc_wallet_address'));
-  const [doctorToken, setDoctorToken] = useState<string | null>(localStorage.getItem('mc_doctor_jwt'));
-  const [doctorName, setDoctorName] = useState<string>(() => {
-    return (
-      localStorage.getItem('mc_profile_name') ||
-      localStorage.getItem('mc_doctor_id') ||
-      localStorage.getItem('mc_wallet_address') ||
-      'Doctor Login'
-    );
-  });
+  const [doctorName, setDoctorName] = useState<string>(() =>
+    localStorage.getItem('mc_profile_name') ||
+    localStorage.getItem('mc_doctor_id') ||
+    localStorage.getItem('mc_wallet_address') ||
+    'Doctor'
+  );
   const [connecting, setConnecting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,15 +22,13 @@ const TopHeader: React.FC = () => {
   useEffect(() => {
     const handler = () => {
       setAddress(localStorage.getItem('mc_wallet_address'));
-      setDoctorToken(localStorage.getItem('mc_doctor_jwt'));
       setDoctorName(
         localStorage.getItem('mc_profile_name') ||
         localStorage.getItem('mc_doctor_id') ||
         localStorage.getItem('mc_wallet_address') ||
-        'Doctor Login'
+        'Doctor'
       );
     };
-
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, []);
@@ -66,31 +61,17 @@ const TopHeader: React.FC = () => {
     }
   };
 
-  const handleDoctorAction = () => {
-    if (doctorToken) {
-      navigate('/scan-qr');
-      return;
-    }
-    navigate('/login');
-  };
-
   const handleDisconnect = () => {
     disconnectWallet();
-    localStorage.removeItem('mc_doctor_jwt');
-    localStorage.removeItem('mc_doctor_id');
+    localStorage.removeItem('mc_wallet_address');
     setAddress(null);
-    setDoctorToken(null);
     setShowDropdown(false);
     window.location.reload();
   };
 
   const displayName = address
     ? (address.length > 12 ? `${address.substring(0, 8)}...` : address)
-    : connecting ? 'Connecting…' : 'Connect Identity';
-
-  const displayDoctorName = doctorToken
-    ? doctorName
-    : localStorage.getItem('mc_profile_name') || localStorage.getItem('mc_doctor_id') || 'Doctor Login';
+    : connecting ? 'Connecting…' : 'Connect Wallet';
 
   return (
     <header className="top-header">
@@ -104,6 +85,7 @@ const TopHeader: React.FC = () => {
       </div>
 
       <div className="header-actions">
+        {/* Wallet connect button */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
             className={`wallet-btn ${address ? 'wallet-btn--connected' : ''}`}
@@ -113,16 +95,6 @@ const TopHeader: React.FC = () => {
             <Wallet size={18} />
             <span>{displayName}</span>
             {address && <ChevronDown size={14} style={{ marginLeft: '2px', opacity: 0.7 }} />}
-          </button>
-
-          <button
-            className={`wallet-btn ${doctorToken ? 'wallet-btn--connected' : ''}`}
-            onClick={handleDoctorAction}
-            style={{ marginLeft: '0.75rem' }}
-          >
-            <LogIn size={18} />
-            <span>{displayDoctorName}</span>
-            {doctorToken && <ChevronDown size={14} style={{ marginLeft: '2px', opacity: 0.7 }} />}
           </button>
 
           {showDropdown && address && (
@@ -146,21 +118,22 @@ const TopHeader: React.FC = () => {
                   width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
                   padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)',
                   color: '#EF4444', fontSize: '0.9rem', fontWeight: 600,
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  marginTop: '0.25rem'
+                  background: 'none', border: 'none', cursor: 'pointer', marginTop: '0.25rem'
                 }}
               >
-                <LogOut size={16} /> Disconnect
+                <LogOut size={16} /> Disconnect Wallet
               </button>
             </div>
           )}
         </div>
 
-        <button className="icon-btn" onClick={() => window.location.href = '/notifications'}>
+        {/* Notifications */}
+        <button className="icon-btn" onClick={() => navigate('/notifications')}>
           <Bell size={20} />
           <span className="badge" />
         </button>
 
+        {/* New Record */}
         <button className="btn-primary" id="new-record-btn" onClick={emitNewRecord}>
           <Plus size={18} />
           <span>New Record</span>
