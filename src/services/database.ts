@@ -23,7 +23,7 @@ let db: any = null;
 // ─── Web Database Adapter (GAP Fallback) ───────────────────────────────────
 
 let webDb: {
-  users: Record<string, User>;
+  users: { [id: string]: User };
   medications: Medication[];
   records: Record[];
   appointments: Appointment[];
@@ -540,7 +540,7 @@ export const AllergyDB = {
   async getAll(patientId?: string): Promise<Allergy[]> {
     if (!patientId) return [];
     if (Platform.OS === 'web') {
-      const severityOrder: Record<string, number> = { 'high': 3, 'medium': 2, 'low': 1 };
+      const severityOrder: { [key: string]: number } = { 'high': 3, 'medium': 2, 'low': 1 };
       return webDb.allergies
         .filter(a => a.patientId === patientId)
         .sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
@@ -632,7 +632,7 @@ export const DoctorAccessRequestDB = {
       `INSERT OR REPLACE INTO doctor_access_requests 
        (id, doctor_id, doctor_name, hospital, requested_at, status, expires_at, patient_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [request.id, request.doctorId, request.doctorName, request.hospital, request.requestedAt, request.status, null, request.patientId ?? null]
+      [request.id, request.doctorId, request.doctorName, request.hospital, request.requestedAt, request.status, request.expiresAt ?? null, request.patientId ?? null]
     );
   },
 
@@ -860,6 +860,7 @@ function mapDoctorAccessRequest(row: any): DoctorAccessRequest {
     hospital: row.hospital,
     requestedAt: row.requested_at,
     status: row.status as DoctorAccessRequest['status'],
+    expiresAt: row.expires_at ?? undefined,
     patientId: row.patient_id ?? undefined,
   };
 }

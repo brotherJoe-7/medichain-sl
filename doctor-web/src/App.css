@@ -313,7 +313,7 @@
 .page-container {
   padding: 2rem;
   flex: 1;
-  overflow-y: auto;
+  /* No overflow-y:auto here — let the window scroll naturally */
 }
 
 /* ─── Responsive: Collapsed sidebar (1024px) ─────────────────────────────── */
@@ -584,19 +584,93 @@
   box-shadow: var(--shadow-md);
 }
 
-/* Dashboard Grid */
+/* ─── Stats Grid (replaces old dashboard-grid + stats-row) ────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Legacy support */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 1.5rem;
 }
-
-/* Stats Cards */
 .stats-row {
   grid-column: span 12;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
+}
+
+/* ─── Dashboard Header Actions ─────────────────────────────────────────────── */
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ─── Blockchain Status Pill ───────────────────────────────────────────────── */
+.blockchain-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.blockchain-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse-glow 2s infinite;
+}
+
+/* ─── Spin animation for RefreshCw ────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Audit Row (Analytics page) ──────────────────────────────────────────── */
+.audit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-color);
+  border: 1px solid var(--border);
+  transition: background-color var(--transition-fast);
+}
+
+.audit-row:hover {
+  background-color: var(--surface-hover);
+}
+
+.audit-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.audit-row__meta {
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  min-width: 90px;
 }
 
 .stat-card {
@@ -983,6 +1057,57 @@
 }
 
 /* Responsive adjustments — see combined media queries above */
+
+/* ─── Mobile: fix main-content height + page-container padding ─────────────── */
+@media (max-width: 768px) {
+  .main-content {
+    min-height: calc(100dvh - 60px); /* subtract mobile-topbar height */
+  }
+
+  .page-container {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+  }
+
+  .dashboard-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .blockchain-pill {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .audit-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .audit-row__meta {
+    text-align: left;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .blockchain-pill span:last-child {
+    display: none; /* hide label text, keep dot only on very small screens */
+  }
+}
 
 /* ─── Modal Overlay ────────────────────────────────────────────────────────── */
 .modal-overlay {

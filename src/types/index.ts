@@ -43,6 +43,7 @@ export interface DoctorAccessRequest {
   hospital: string;
   requestedAt: string;
   status: 'pending' | 'approved' | 'denied';
+  expiresAt?: string;
   patientId?: string;
 }
 
