@@ -313,7 +313,7 @@
 .page-container {
   padding: 2rem;
   flex: 1;
-  /* No overflow-y:auto here — let the window scroll naturally */
+  overflow-x: hidden; /* Prevent horizontal slide on mobile */
 }
 
 /* ─── Responsive: Collapsed sidebar (1024px) ─────────────────────────────── */
@@ -501,6 +501,25 @@
   .data-table td {
     padding: 0.75rem 0.9rem;
     font-size: 0.875rem;
+  }
+
+  /* Calendar header wraps on mobile */
+  .calendar-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+  }
+
+  /* Page header action buttons wrap on mobile */
+  .page-header > div:last-child {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Calendar view-mode buttons wrap */
+  .calendar-view-btns {
+    flex-wrap: wrap;
   }
 }
 

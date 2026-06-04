@@ -65,7 +65,7 @@ const Appointments: React.FC = () => {
         </div>
       </div>
 
-      <div className="calendar-header animate-fade-in" style={{ animationDelay: '0.1s', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--surface)', padding: '1rem 1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
+      <div className="calendar-header animate-fade-in" style={{ animationDelay: '0.1s', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--surface)', padding: '1rem 1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', marginBottom: '1.5rem', display: 'flex' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <h2 className="heading-3" style={{ margin: 0 }}>
             {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -75,7 +75,7 @@ const Appointments: React.FC = () => {
             <button className="icon-btn-sm" style={{ border: '1px solid var(--border)' }}><ChevronRight size={18} /></button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="calendar-view-btns" style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>Day</button>
           <button className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', boxShadow: 'none' }}>Week</button>
           <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>Month</button>
