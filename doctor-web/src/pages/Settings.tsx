@@ -70,13 +70,13 @@ const Settings: React.FC = () => {
       <div className="dashboard-grid animate-fade-in" style={{ animationDelay: '0.1s' }}>
 
         {/* Profile Settings */}
-        <div style={{ gridColumn: 'span 8', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '2rem' }}>
+        <div className="settings-main-card" style={{ backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
             <User size={24} color="var(--primary)" />
             <h3 className="heading-3" style={{ margin: 0 }}>Professional Profile</h3>
           </div>
 
-          <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem' }}>
+          <div className="settings-profile-header">
             {/* Avatar upload */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
               <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
@@ -97,7 +97,7 @@ const Settings: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="form-grid-2" style={{ flex: 1, gap: '1.5rem', marginTop: 0 }}>
               <div style={formGroupStyle}>
                 <label style={labelStyle}>Full Name</label>
                 <input type="text" style={inputStyle} value={name} onChange={e => setName(e.target.value)} />
@@ -131,7 +131,7 @@ const Settings: React.FC = () => {
         </div>
 
         {/* Security & Blockchain */}
-        <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="settings-sidebar-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
           <div style={{ backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>

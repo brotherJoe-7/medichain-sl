@@ -27,7 +27,7 @@ const Profile: React.FC = () => {
       <div className="dashboard-grid">
 
         {/* Profile Card */}
-        <div style={{ gridColumn: 'span 4', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div className="profile-sidebar-card" style={{ backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
           <div style={{ height: '100px', backgroundColor: 'var(--primary)', position: 'relative' }}>
             <div style={{ position: 'absolute', bottom: '-40px', left: '2rem', width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--surface)', border: '4px solid var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               {avatar ? (
@@ -70,13 +70,13 @@ const Profile: React.FC = () => {
         </div>
 
         {/* Details */}
-        <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="profile-details-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
           <div style={{ backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '2rem' }}>
             <h3 className="heading-3" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Award size={20} color="var(--primary)" /> Credential Verification
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div className="form-grid-2" style={{ gap: '2rem', marginTop: 0 }}>
               <div>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Medical License</label>
                 <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
             <h3 className="heading-3" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Activity size={20} color="var(--primary)" /> Blockchain Identity
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div className="form-grid-2" style={{ gap: '2rem', marginTop: 0 }}>
               <div>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Fabric Wallet Address</label>
                 <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '0.5rem', fontFamily: 'monospace', backgroundColor: 'var(--bg-color)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}>

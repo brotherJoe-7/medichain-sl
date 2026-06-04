@@ -478,8 +478,8 @@
     grid-column: span 12;
   }
 
-  [style*="gridColumn"] {
-    grid-column: span 1 !important;
+  [style*="grid-column"], [style*="gridColumn"] {
+    grid-column: 1 / -1 !important;
   }
 
   .btn-primary,
@@ -961,7 +961,7 @@
   background-color: var(--surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--shadow-sm);
 }
 
@@ -1296,4 +1296,152 @@
 }
 .status-dot.active { background: #10B981; }
 .status-dot.inactive { background: #94A3B8; }
+
+/* ─── Responsive Grid & Page Layout Optimization ────────────────────────── */
+
+/* Appointments Grid */
+.appointments-grid {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .appointments-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+/* Appointment List Card Layout */
+.appointment-item-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  background-color: var(--bg-color);
+}
+.appointment-time-col {
+  width: 100px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding-right: 1rem;
+  margin-right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+.appointment-body-col {
+  flex: 1;
+  min-width: 0;
+}
+.appointment-actions-col {
+  margin-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .appointment-item-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .appointment-time-col {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 0.75rem;
+    margin-right: 0;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .appointment-time-col span:last-child {
+    margin-left: auto;
+  }
+  .appointment-actions-col {
+    margin-left: 0;
+    width: 100%;
+  }
+  .appointment-actions-col button {
+    width: 100%;
+  }
+}
+
+/* Scan QR Viewfinder */
+.qr-scanner-viewfinder {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  background-color: #000;
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 480px) {
+  .qr-scanner-viewfinder {
+    max-width: 100%;
+  }
+}
+
+/* Scan Panel Layout */
+.scan-panel-card {
+  grid-column: span 6;
+}
+@media (max-width: 768px) {
+  .scan-panel-card {
+    grid-column: span 12 !important;
+  }
+}
+
+/* Profile Layout Cards */
+.profile-sidebar-card {
+  grid-column: span 4;
+}
+.profile-details-card {
+  grid-column: span 8;
+}
+@media (max-width: 768px) {
+  .profile-sidebar-card,
+  .profile-details-card {
+    grid-column: span 12 !important;
+  }
+}
+
+/* Settings Layout Cards */
+.settings-main-card {
+  grid-column: span 8;
+}
+.settings-sidebar-card {
+  grid-column: span 4;
+}
+.settings-profile-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 768px) {
+  .settings-main-card,
+  .settings-sidebar-card {
+    grid-column: span 12 !important;
+  }
+  .settings-profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+  }
+}
 

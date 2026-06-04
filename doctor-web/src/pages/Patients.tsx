@@ -172,7 +172,7 @@ const Patients: React.FC = () => {
             <form onSubmit={handleSubmit}>
               <fieldset style={{ border: '1px solid var(--border)', borderRadius: '0.5rem', padding: '1rem', marginBottom: '1.25rem' }}>
                 <legend style={{ fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-main)' }}>Personal Information</legend>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                <div className="form-grid-2">
                   <label style={labelStyle}>
                     Full Name *
                     <input id="patient-name" style={inputStyle} required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Mohamed Kamara" />
@@ -198,7 +198,7 @@ const Patients: React.FC = () => {
 
               <fieldset style={{ border: '1px solid var(--border)', borderRadius: '0.5rem', padding: '1rem', marginBottom: '1.25rem' }}>
                 <legend style={{ fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-main)' }}>Contact Details</legend>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                <div className="form-grid-2">
                   <label style={labelStyle}>
                     Phone Number *
                     <input id="patient-phone" style={inputStyle} required value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+232 XX XXX XXXX" />

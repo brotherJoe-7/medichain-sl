@@ -82,7 +82,7 @@ const Appointments: React.FC = () => {
         </div>
       </div>
 
-      <div className="appointments-grid animate-fade-in" style={{ animationDelay: '0.2s', display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '1.5rem' }}>
+      <div className="appointments-grid animate-fade-in" style={{ animationDelay: '0.2s' }}>
 
         <div style={{ backgroundColor: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', alignSelf: 'start' }}>
           <h3 className="font-semibold" style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>Today's Summary</h3>
@@ -127,8 +127,8 @@ const Appointments: React.FC = () => {
               </div>
             ) : (
               appointments.map((apt) => (
-                <div key={apt.id} style={{ display: 'flex', alignItems: 'flex-start', padding: '1.25rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', transition: 'all 0.2s', backgroundColor: 'var(--bg-color)' }} className="hover-lift">
-                  <div style={{ width: '100px', flexShrink: 0, borderRight: '1px solid var(--border)', paddingRight: '1rem', marginRight: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                <div key={apt.id} className="appointment-item-card hover-lift">
+                  <div className="appointment-time-col">
                     <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.95rem' }}>{apt.time.split(' ')[0]}</span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>{apt.time.split(' ')[1]}</span>
                     <span style={{ color: 'var(--text-light)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
@@ -136,7 +136,7 @@ const Appointments: React.FC = () => {
                     </span>
                   </div>
 
-                  <div style={{ flex: 1 }}>
+                  <div className="appointment-body-col">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                       <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary)', fontWeight: 600 }}>{apt.name}</h4>
                       <span style={{
@@ -156,7 +156,7 @@ const Appointments: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ marginLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div className="appointment-actions-col">
                     <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>View Record</button>
                   </div>
                 </div>

@@ -148,7 +148,7 @@ const ScanQR: React.FC = () => {
       </div>
 
       <div className="dashboard-grid animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <div style={{ gridColumn: 'span 6', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+        <div className="scan-panel-card" style={{ backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
           <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <h3 className="heading-3" style={{ margin: 0 }}>Scanner View</h3>
             <span className={`status-badge ${scanning ? 'status-upcoming' : scanned ? 'status-completed' : 'status-pending'}`}>
@@ -156,7 +156,7 @@ const ScanQR: React.FC = () => {
             </span>
           </div>
 
-          <div style={{ width: '100%', maxWidth: '420px', minHeight: '420px', backgroundColor: '#000', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="qr-scanner-viewfinder">
             <div id="qr-reader" style={{ width: '100%', height: '100%' }} />
 
             {!scanned && !scanning && (
@@ -215,7 +215,7 @@ const ScanQR: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="scan-panel-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
               <ShieldAlert size={24} color="#EF4444" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -235,7 +235,7 @@ const ScanQR: React.FC = () => {
                 <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#EF4444' }}>{emergencyData.tokenExpiry || 'Expires soon'}</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="form-grid-2" style={{ gap: '1.5rem', marginTop: 0 }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Patient Name</label>
                   <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><User size={16} /> {emergencyData.name || 'Unknown'}</div>
