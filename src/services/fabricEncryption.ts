@@ -10,6 +10,32 @@
 // for secure encryption. This is a simplified service structure.
 
 import * as Crypto from 'expo-crypto';
+import { btoa } from '../utils/base64';
+
+function stringToUtf8Bytes(str: string): number[] {
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code < 0x80) {
+      bytes.push(code);
+    } else if (code < 0x800) {
+      bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+    } else if (code < 0xd800 || code >= 0xe000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    } else {
+      i++;
+      const nextCode = str.charCodeAt(i);
+      const utf32 = 0x10000 + (((code & 0x3ff) << 10) | (nextCode & 0x3ff));
+      bytes.push(
+        0xf0 | (utf32 >> 18),
+        0x80 | ((utf32 >> 12) & 0x3f),
+        0x80 | ((utf32 >> 6) & 0x3f),
+        0x80 | (utf32 & 0x3f)
+      );
+    }
+  }
+  return bytes;
+}
 
 export class FabricEncryptionService {
   /**
@@ -19,8 +45,9 @@ export class FabricEncryptionService {
    */
   static async generateSymmetricKey(): Promise<string> {
     const randomBytes = await Crypto.getRandomBytesAsync(32);
-    // Convert to base64 or hex for storage/usage
-    return Buffer.from(randomBytes).toString('base64');
+    // Convert to base64 for storage/usage
+    const binString = String.fromCharCode(...new Uint8Array(randomBytes));
+    return btoa(binString);
   }
 
   /**
@@ -36,11 +63,17 @@ export class FabricEncryptionService {
     
     // Simulating encryption process
     const iv = await Crypto.getRandomBytesAsync(12);
-    const simulatedEncryptedData = Buffer.from(payload).toString('base64'); // Simulating encrypted output
+    
+    // Convert payload string to safe base64
+    const utf8Bytes = stringToUtf8Bytes(payload);
+    const binString = String.fromCharCode(...utf8Bytes);
+    const simulatedEncryptedData = btoa(binString);
+    
+    const ivBinString = String.fromCharCode(...new Uint8Array(iv));
     
     return {
       encrypted: `ENC_FABRIC_${simulatedEncryptedData}`,
-      iv: Buffer.from(iv).toString('base64'),
+      iv: btoa(ivBinString),
     };
   }
 

@@ -9,7 +9,7 @@ if (Platform.OS !== 'web') {
     // Hidden require to avoid Metro static resolution on unsupported paths
     // and to make NFC optional during Expo bundling.
     NfcManager = require(nfcModuleName)?.default ?? null;
-  } catch (e) {
+    } catch (e: any) {
     console.warn('NFC not available:', e?.message ?? e);
     NfcManager = null;
   }
@@ -21,6 +21,31 @@ function bytesToText(bytes: number[]) {
   const languageCodeLength = statusByte & 0x3f;
   const textBytes = bytes.slice(1 + languageCodeLength);
   return String.fromCharCode(...textBytes);
+}
+
+function stringToUtf8Bytes(str: string): number[] {
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code < 0x80) {
+      bytes.push(code);
+    } else if (code < 0x800) {
+      bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+    } else if (code < 0xd800 || code >= 0xe000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    } else {
+      i++;
+      const nextCode = str.charCodeAt(i);
+      const utf32 = 0x10000 + (((code & 0x3ff) << 10) | (nextCode & 0x3ff));
+      bytes.push(
+        0xf0 | (utf32 >> 18),
+        0x80 | ((utf32 >> 12) & 0x3f),
+        0x80 | ((utf32 >> 6) & 0x3f),
+        0x80 | (utf32 & 0x3f)
+      );
+    }
+  }
+  return bytes;
 }
 
 export function useNfc() {
@@ -40,7 +65,7 @@ export function useNfc() {
     if (!NfcManager) throw new Error('NFC not available');
     try {
       await NfcManager.start();
-      const bytes = NfcManager.stringToBytes ? NfcManager.stringToBytes(token) : Array.from(Buffer.from(token, 'utf8'));
+      const bytes = NfcManager.stringToBytes ? NfcManager.stringToBytes(token) : stringToUtf8Bytes(token);
       const ndefRecord = NfcManager.Ndef?.textRecord
         ? NfcManager.Ndef.textRecord(token)
         : { tnf: NfcManager.Ndef.TNF_WELL_KNOWN, type: NfcManager.Ndef.RTD_TEXT, payload: bytes };

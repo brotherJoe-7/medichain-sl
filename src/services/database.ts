@@ -5,14 +5,82 @@
  * This service is the single source of truth for all persisted data.
  * Zustand reads from here on startup and writes here on every mutation.
  */
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 import { User, Medication, Record, Appointment, BlockchainLog, HealthMetric, Allergy, DoctorAccessRequest } from '../types';
 
-let db: SQLite.SQLiteDatabase | null = null;
+// Dynamic import of expo-sqlite to avoid bundler crashes on Web
+let SQLite: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    SQLite = require('expo-sqlite');
+  } catch (e) {
+    console.warn('[DB] Failed to load expo-sqlite natively:', e);
+  }
+}
+
+let db: any = null;
+
+// ─── Web Database Adapter (GAP Fallback) ───────────────────────────────────
+
+let webDb: {
+  users: Record<string, User>;
+  medications: Medication[];
+  records: Record[];
+  appointments: Appointment[];
+  blockchain_logs: BlockchainLog[];
+  health_metrics: HealthMetric[];
+  allergies: Allergy[];
+  doctor_access_requests: DoctorAccessRequest[];
+  record_amendments: any[];
+  fhir_resources: any[];
+} = {
+  users: {},
+  medications: [],
+  records: [],
+  appointments: [],
+  blockchain_logs: [],
+  health_metrics: [],
+  allergies: [],
+  doctor_access_requests: [],
+  record_amendments: [],
+  fhir_resources: [],
+};
+
+function loadWebData() {
+  if (Platform.OS !== 'web') return;
+  try {
+    const data = localStorage.getItem('medichain_web_db');
+    if (data) {
+      webDb = { ...webDb, ...JSON.parse(data) };
+    }
+  } catch (e) {
+    console.warn('[DB Polyfill] Failed to load web database:', e);
+  }
+}
+
+function saveWebData() {
+  if (Platform.OS !== 'web') return;
+  try {
+    localStorage.setItem('medichain_web_db', JSON.stringify(webDb));
+  } catch (e) {
+    console.warn('[DB Polyfill] Failed to save web database:', e);
+  }
+}
 
 // ─── Initialise ────────────────────────────────────────────────────────────
 
 export async function initDatabase(): Promise<void> {
+  if (Platform.OS === 'web') {
+    loadWebData();
+    console.log('🖥️ [DB Service] Web Storage database initialized.');
+    return;
+  }
+
+  if (!SQLite) {
+    console.warn('[DB Service] Native SQLite is missing. Database cannot be initialized.');
+    return;
+  }
+
   db = await SQLite.openDatabaseAsync('medichain_v1.db');
 
   await db.execAsync(`
@@ -88,6 +156,7 @@ export async function initDatabase(): Promise<void> {
       id         TEXT PRIMARY KEY,
       type       TEXT NOT NULL,
       name       TEXT NOT NULL,
+      text_val   TEXT,
       severity   TEXT NOT NULL,
       reaction   TEXT NOT NULL,
       patient_id TEXT
@@ -127,17 +196,19 @@ export async function initDatabase(): Promise<void> {
   await migratePatientColumns();
 }
 
-function getDb(): SQLite.SQLiteDatabase {
+function getDb() {
   if (!db) throw new Error('Database not initialized. Call initDatabase() first.');
   return db;
 }
 
 async function columnExists(table: string, column: string): Promise<boolean> {
-  const rows = await getDb().getAllAsync<any>(`PRAGMA table_info(${table})`);
+  if (Platform.OS === 'web') return false;
+  const rows = await getDb().getAllAsync(`PRAGMA table_info(${table})`);
   return rows.some((row: any) => row.name === column);
 }
 
 async function migratePatientColumns(): Promise<void> {
+  if (Platform.OS === 'web') return;
   const tables = [
     'medications',
     'records',
@@ -159,18 +230,31 @@ async function migratePatientColumns(): Promise<void> {
 
 export const UserDB = {
   async get(): Promise<User | null> {
-    const row = await getDb().getFirstAsync<any>('SELECT * FROM users LIMIT 1');
+    if (Platform.OS === 'web') {
+      const keys = Object.keys(webDb.users);
+      if (keys.length === 0) return null;
+      return webDb.users[keys[0]];
+    }
+    const row = await getDb().getFirstAsync('SELECT * FROM users LIMIT 1');
     if (!row) return null;
     return mapUser(row);
   },
 
   async getById(id: string): Promise<User | null> {
-    const row = await getDb().getFirstAsync<any>('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
+    if (Platform.OS === 'web') {
+      return webDb.users[id] || null;
+    }
+    const row = await getDb().getFirstAsync('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
     if (!row) return null;
     return mapUser(row);
   },
 
   async upsert(user: User): Promise<void> {
+    if (Platform.OS === 'web') {
+      webDb.users[user.id] = user;
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       `INSERT INTO users (id, name, email, phone, blood_type, weight, height, avatar)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -183,6 +267,11 @@ export const UserDB = {
   },
 
   async delete(id: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      delete webDb.users[id];
+      saveWebData();
+      return;
+    }
     await getDb().runAsync('DELETE FROM users WHERE id = ?', [id]);
   },
 };
@@ -192,7 +281,12 @@ export const UserDB = {
 export const MedicationDB = {
   async getAll(patientId?: string): Promise<Medication[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.medications
+        .filter(m => m.patientId === patientId)
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM medications WHERE patient_id = ? ORDER BY time ASC',
       [patientId]
     );
@@ -200,6 +294,16 @@ export const MedicationDB = {
   },
 
   async insert(med: Medication): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.medications.findIndex(m => m.id === med.id);
+      if (idx !== -1) {
+        webDb.medications[idx] = med;
+      } else {
+        webDb.medications.push(med);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       'INSERT OR REPLACE INTO medications (id, name, dosage, frequency, time, status, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [med.id, med.name, med.dosage, med.frequency ?? null, med.time, med.status, med.patientId ?? null]
@@ -207,10 +311,23 @@ export const MedicationDB = {
   },
 
   async updateStatus(id: string, status: Medication['status']): Promise<void> {
+    if (Platform.OS === 'web') {
+      const med = webDb.medications.find(m => m.id === id);
+      if (med) {
+        med.status = status;
+        saveWebData();
+      }
+      return;
+    }
     await getDb().runAsync('UPDATE medications SET status = ? WHERE id = ?', [status, id]);
   },
 
   async delete(id: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      webDb.medications = webDb.medications.filter(m => m.id !== id);
+      saveWebData();
+      return;
+    }
     await getDb().runAsync('DELETE FROM medications WHERE id = ?', [id]);
   },
 
@@ -224,7 +341,12 @@ export const MedicationDB = {
 export const RecordDB = {
   async getAll(patientId?: string): Promise<Record[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.records
+        .filter(r => r.patientId === patientId)
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM records WHERE patient_id = ? ORDER BY date DESC',
       [patientId]
     );
@@ -232,6 +354,16 @@ export const RecordDB = {
   },
 
   async insert(record: Record): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.records.findIndex(r => r.id === record.id);
+      if (idx !== -1) {
+        webDb.records[idx] = record;
+      } else {
+        webDb.records.push(record);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       `INSERT OR REPLACE INTO records
          (id, title, date, type, doctor, hospital, file_uri, ai_insights, hash, notarized, supersedes, fhir_resource, patient_signature, patient_id)
@@ -243,13 +375,18 @@ export const RecordDB = {
         record.hash ?? null, record.notarized ? 1 : 0,
         record.supersedes ?? null,
         record.fhirResource ? JSON.stringify(record.fhirResource) : null,
-        null, // patient_signature - populated via signRecord
+        null, // patient_signature
         record.patientId ?? null,
       ]
     );
   },
 
   async delete(id: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      webDb.records = webDb.records.filter(r => r.id !== id);
+      saveWebData();
+      return;
+    }
     await getDb().runAsync('DELETE FROM records WHERE id = ?', [id]);
   },
 
@@ -263,7 +400,12 @@ export const RecordDB = {
 export const AppointmentDB = {
   async getAll(patientId?: string): Promise<Appointment[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.appointments
+        .filter(a => a.patientId === patientId)
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM appointments WHERE patient_id = ? ORDER BY date ASC',
       [patientId]
     );
@@ -271,6 +413,16 @@ export const AppointmentDB = {
   },
 
   async insert(appt: Appointment): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.appointments.findIndex(a => a.id === appt.id);
+      if (idx !== -1) {
+        webDb.appointments[idx] = appt;
+      } else {
+        webDb.appointments.push(appt);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       'INSERT OR REPLACE INTO appointments (id, doctor_name, specialty, date, time, status, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [appt.id, appt.doctorName, appt.specialty, appt.date, appt.time, appt.status, appt.patientId ?? null]
@@ -278,10 +430,23 @@ export const AppointmentDB = {
   },
 
   async updateStatus(id: string, status: Appointment['status']): Promise<void> {
+    if (Platform.OS === 'web') {
+      const appt = webDb.appointments.find(a => a.id === id);
+      if (appt) {
+        appt.status = status;
+        saveWebData();
+      }
+      return;
+    }
     await getDb().runAsync('UPDATE appointments SET status = ? WHERE id = ?', [status, id]);
   },
 
   async delete(id: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      webDb.appointments = webDb.appointments.filter(a => a.id !== id);
+      saveWebData();
+      return;
+    }
     await getDb().runAsync('DELETE FROM appointments WHERE id = ?', [id]);
   },
 
@@ -295,7 +460,13 @@ export const AppointmentDB = {
 export const BlockchainLogDB = {
   async getAll(patientId?: string): Promise<BlockchainLog[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.blockchain_logs
+        .filter(l => l.patientId === patientId)
+        .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+        .slice(0, 50);
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM blockchain_logs WHERE patient_id = ? ORDER BY timestamp DESC LIMIT 50',
       [patientId]
     );
@@ -303,6 +474,16 @@ export const BlockchainLogDB = {
   },
 
   async insert(log: BlockchainLog): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.blockchain_logs.findIndex(l => l.id === log.id);
+      if (idx !== -1) {
+        webDb.blockchain_logs[idx] = log;
+      } else {
+        webDb.blockchain_logs.push(log);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       'INSERT OR REPLACE INTO blockchain_logs (id, action, timestamp, details, tx_hash, patient_id) VALUES (?, ?, ?, ?, ?, ?)',
       [log.id, log.action, log.timestamp, log.details, log.txHash, log.patientId ?? null]
@@ -319,7 +500,12 @@ export const BlockchainLogDB = {
 export const HealthMetricDB = {
   async getAll(patientId?: string): Promise<HealthMetric[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.health_metrics
+        .filter(m => m.patientId === patientId)
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM health_metrics WHERE patient_id = ? ORDER BY date ASC',
       [patientId]
     );
@@ -327,6 +513,16 @@ export const HealthMetricDB = {
   },
 
   async insert(metric: HealthMetric): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.health_metrics.findIndex(m => m.id === metric.id);
+      if (idx !== -1) {
+        webDb.health_metrics[idx] = metric;
+      } else {
+        webDb.health_metrics.push(metric);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       'INSERT OR REPLACE INTO health_metrics (id, type, value, unit, date, patient_id) VALUES (?, ?, ?, ?, ?, ?)',
       [metric.id, metric.type, metric.value, metric.unit, metric.date, metric.patientId ?? null]
@@ -343,7 +539,13 @@ export const HealthMetricDB = {
 export const AllergyDB = {
   async getAll(patientId?: string): Promise<Allergy[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      const severityOrder: Record<string, number> = { 'high': 3, 'medium': 2, 'low': 1 };
+      return webDb.allergies
+        .filter(a => a.patientId === patientId)
+        .sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM allergies WHERE patient_id = ? ORDER BY severity DESC',
       [patientId]
     );
@@ -351,13 +553,28 @@ export const AllergyDB = {
   },
 
   async insert(allergy: Allergy): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.allergies.findIndex(a => a.id === allergy.id);
+      if (idx !== -1) {
+        webDb.allergies[idx] = allergy;
+      } else {
+        webDb.allergies.push(allergy);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
-      'INSERT OR REPLACE INTO allergies (id, type, name, severity, reaction, patient_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [allergy.id, allergy.type, allergy.name, allergy.severity, allergy.reaction, allergy.patientId ?? null]
+      'INSERT OR REPLACE INTO allergies (id, type, name, text_val, severity, reaction, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [allergy.id, allergy.type, allergy.name, null, allergy.severity, allergy.reaction, allergy.patientId ?? null]
     );
   },
 
   async delete(id: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      webDb.allergies = webDb.allergies.filter(a => a.id !== id);
+      saveWebData();
+      return;
+    }
     await getDb().runAsync('DELETE FROM allergies WHERE id = ?', [id]);
   },
 
@@ -366,12 +583,17 @@ export const AllergyDB = {
   },
 };
 
-// ─── Doctor Access Requests (GAP 5) ─────────────────────────────────────────
+// ─── Doctor Access Requests ─────────────────────────────────────────────────
 
 export const DoctorAccessRequestDB = {
   async getAll(patientId?: string): Promise<DoctorAccessRequest[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.doctor_access_requests
+        .filter(r => r.patientId === patientId)
+        .sort((a, b) => (b.requestedAt || '').localeCompare(a.requestedAt || ''));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM doctor_access_requests WHERE patient_id = ? ORDER BY requested_at DESC',
       [patientId]
     );
@@ -380,7 +602,13 @@ export const DoctorAccessRequestDB = {
 
   async getPending(patientId?: string): Promise<DoctorAccessRequest[]> {
     if (!patientId) return [];
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      const nowStr = new Date().toISOString();
+      return webDb.doctor_access_requests
+        .filter(r => r.patientId === patientId && r.status === 'pending' && (!r.expiresAt || r.expiresAt > nowStr))
+        .sort((a, b) => (b.requestedAt || '').localeCompare(a.requestedAt || ''));
+    }
+    const rows = await getDb().getAllAsync(
       `SELECT * FROM doctor_access_requests 
        WHERE patient_id = ? AND status = 'pending' AND (expires_at IS NULL OR expires_at > datetime('now'))
        ORDER BY requested_at DESC`,
@@ -390,6 +618,16 @@ export const DoctorAccessRequestDB = {
   },
 
   async insert(request: DoctorAccessRequest): Promise<void> {
+    if (Platform.OS === 'web') {
+      const idx = webDb.doctor_access_requests.findIndex(r => r.id === request.id);
+      if (idx !== -1) {
+        webDb.doctor_access_requests[idx] = request;
+      } else {
+        webDb.doctor_access_requests.push(request);
+      }
+      saveWebData();
+      return;
+    }
     await getDb().runAsync(
       `INSERT OR REPLACE INTO doctor_access_requests 
        (id, doctor_id, doctor_name, hospital, requested_at, status, expires_at, patient_id)
@@ -399,6 +637,14 @@ export const DoctorAccessRequestDB = {
   },
 
   async updateStatus(id: string, status: 'pending' | 'approved' | 'denied'): Promise<void> {
+    if (Platform.OS === 'web') {
+      const request = webDb.doctor_access_requests.find(r => r.id === id);
+      if (request) {
+        request.status = status;
+        saveWebData();
+      }
+      return;
+    }
     await getDb().runAsync(
       'UPDATE doctor_access_requests SET status = ? WHERE id = ?',
       [status, id]
@@ -406,15 +652,25 @@ export const DoctorAccessRequestDB = {
   },
 
   async delete(id: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      webDb.doctor_access_requests = webDb.doctor_access_requests.filter(r => r.id !== id);
+      saveWebData();
+      return;
+    }
     await getDb().runAsync('DELETE FROM doctor_access_requests WHERE id = ?', [id]);
   },
 };
 
-// ─── Record Amendments (GAP 8) ──────────────────────────────────────────────
+// ─── Record Amendments ──────────────────────────────────────────────────────
 
 export const RecordAmendmentDB = {
   async getAmendmentsFor(originalRecordId: string): Promise<any[]> {
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.record_amendments
+        .filter(a => a.original_record_id === originalRecordId)
+        .sort((a, b) => b.amended_at.localeCompare(a.amended_at));
+    }
+    const rows = await getDb().getAllAsync(
       `SELECT * FROM record_amendments 
        WHERE original_record_id = ?
        ORDER BY amended_at DESC`,
@@ -429,6 +685,19 @@ export const RecordAmendmentDB = {
     reason: string,
     amendedBy: string
   ): Promise<void> {
+    if (Platform.OS === 'web') {
+      const id = `amendment_${Date.now()}`;
+      webDb.record_amendments.push({
+        id,
+        original_record_id: originalRecordId,
+        amended_record_id: amendedRecordId,
+        amendment_reason: reason,
+        amended_by: amendedBy,
+        amended_at: new Date().toISOString(),
+      });
+      saveWebData();
+      return;
+    }
     const id = `amendment_${Date.now()}`;
     await getDb().runAsync(
       `INSERT INTO record_amendments 
@@ -439,11 +708,17 @@ export const RecordAmendmentDB = {
   },
 };
 
-// ─── FHIR Resources (GAP 6) ─────────────────────────────────────────────────
+// ─── FHIR Resources ─────────────────────────────────────────────────────────
 
 export const FHIRResourceDB = {
   async getForRecord(recordId: string): Promise<any[]> {
-    const rows = await getDb().getAllAsync<any>(
+    if (Platform.OS === 'web') {
+      return webDb.fhir_resources
+        .filter(f => f.record_id === recordId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(f => ({ ...f, resource_data: f.resource_data }));
+    }
+    const rows = await getDb().getAllAsync(
       'SELECT * FROM fhir_resources WHERE record_id = ? ORDER BY created_at DESC',
       [recordId]
     );
@@ -454,6 +729,18 @@ export const FHIRResourceDB = {
   },
 
   async insert(recordId: string, resourceType: string, resourceData: any): Promise<void> {
+    if (Platform.OS === 'web') {
+      const id = `fhir_${recordId}_${Date.now()}`;
+      webDb.fhir_resources.push({
+        id,
+        record_id: recordId,
+        resource_type: resourceType,
+        resource_data: resourceData,
+        created_at: new Date().toISOString(),
+      });
+      saveWebData();
+      return;
+    }
     const id = `fhir_${recordId}_${Date.now()}`;
     await getDb().runAsync(
       `INSERT INTO fhir_resources (id, record_id, resource_type, resource_data, created_at)
@@ -466,7 +753,10 @@ export const FHIRResourceDB = {
 // ─── Utility: Check if DB is seeded ─────────────────────────────────────────
 
 export async function isSeeded(): Promise<boolean> {
-  const row = await getDb().getFirstAsync<{ count: number }>(
+  if (Platform.OS === 'web') {
+    return webDb.medications.length > 0;
+  }
+  const row = await getDb().getFirstAsync(
     'SELECT COUNT(*) as count FROM medications'
   );
   return (row?.count ?? 0) > 0;

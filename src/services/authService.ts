@@ -7,7 +7,7 @@
  * - Simulated JWT flow that is ready to plug in a real backend endpoint
  */
 
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/secureStore';
 import { useStore } from '../store/useStore';
 import { atob, btoa } from '../utils/base64';
 

@@ -7,7 +7,13 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 // @ts-ignore - optional native module
-const { BarCodeScanner } = require('expo-barcode-scanner');
+let BarCodeScanner: any = null;
+try {
+  const BarCodeScannerModule = require('expo-barcode-scanner');
+  BarCodeScanner = BarCodeScannerModule?.BarCodeScanner ?? null;
+} catch (e) {
+  console.warn('[Scanner] Failed to load native BarCodeScanner:', e);
+}
 import { useNfc } from '../hooks/useNfc';
 import { Card, CardBody, Button, Toast } from '../components';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
@@ -145,10 +151,24 @@ export default function DoctorScanScreen() {
         ) : isScanning ? (
           <View style={styles.scannerContainer}>
             <View style={styles.scannerFrame}>
-              <BarCodeScanner
-                onBarCodeScanned={onBarCodeScanned}
-                style={{ width: 300, height: 300 }}
-              />
+              {BarCodeScanner ? (
+                <BarCodeScanner
+                  onBarCodeScanned={onBarCodeScanned}
+                  style={{ width: 300, height: 300 }}
+                />
+              ) : (
+                <View style={styles.webScannerContainer}>
+                  <MaterialCommunityIcons name="camera-off" size={48} color={Colors.neutral400} />
+                  <Text style={styles.webScannerText}>Camera view is simulated on Web</Text>
+                  
+                  <TouchableOpacity
+                    style={styles.simulateScanBtn}
+                    onPress={() => onBarCodeScanned({ data: 'pat_001_mock_session_token' })}
+                  >
+                    <Text style={styles.simulateScanBtnText}>Simulate Successful Scan</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               <View style={[styles.corner, styles.topLeft]} />
               <View style={[styles.corner, styles.topRight]} />
               <View style={[styles.corner, styles.bottomLeft]} />
@@ -306,10 +326,17 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.xl,
   },
 
-  // READY STATE
+    // READY STATE
   readyContainer: {
     alignItems: 'center',
     width: '100%',
+  },
+  loginPromptContainer: {
+    padding: Spacing.xl,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
   },
   readyTitle: {
     fontSize: FontSize.h3,
@@ -446,5 +473,31 @@ const styles = StyleSheet.create({
   instructionDesc: {
     fontSize: FontSize.bodySmall,
     color: Colors.neutral600,
+  },
+  webScannerContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.neutral100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  webScannerText: {
+    fontSize: FontSize.bodySmall,
+    color: Colors.neutral600,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  simulateScanBtn: {
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+  },
+  simulateScanBtnText: {
+    color: Colors.white,
+    fontWeight: FontWeight.bold,
+    fontSize: FontSize.bodySmall,
   },
 });

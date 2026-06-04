@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/secureStore';
 
 const expoExtra = ((Constants.expoConfig?.extra ?? (Constants.manifest as any)?.extra) as any) || {};
 const configuredApiBaseUrl = expoExtra.apiBaseUrl ?? process.env.API_BASE_URL ?? 'http://localhost:3000/api';

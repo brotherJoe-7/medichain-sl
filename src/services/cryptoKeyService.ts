@@ -17,7 +17,7 @@
  *   const verified = crypto.verifySignature(data, signature, publicKey);
  */
 
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/secureStore';
 import * as Crypto from 'expo-crypto';
 import { encode as base64Encode, decode as base64Decode } from 'base-64';
 
